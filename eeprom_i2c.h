@@ -58,14 +58,14 @@ extern "C" {
      * Byte 63  : 8bit  : FlashFS Signature Byte
      */ //</editor-fold>
     
-    extern struct I2Ceeprom {
+    struct I2Ceeprom {
         unsigned char       Daddr;          // device bus base address
         unsigned long       Delay;          // timing parameter for this device
         unsigned char       AddressMode;    // how to adress this device
         unsigned int        MBWsize;        // how many bytes can be written sequencially
-    } I2C_eprom;
+    };
     
-    unsigned int ReadByte(unsigned char d_adr, unsigned int b_adr);
+    unsigned int ReadByte(struct I2Ceeprom, unsigned int b_adr);
     unsigned char WriteByte(unsigned char d_adr, unsigned int b_adr, unsigned char byte);
     unsigned char ReadBlock(unsigned char d_adr, unsigned long block, unsigned char *ram_start_address);
     unsigned char WriteBlock(unsigned char d_adr, unsigned long block, unsigned char *ram_start_address);

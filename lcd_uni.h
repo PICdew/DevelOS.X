@@ -33,7 +33,20 @@ extern "C" {
 #ifdef MOD_Display_LCD_Uni
 
     extern struct LCD_Display {
-        unsigned char Buffer[4][20];                                            // a buffer for a 4x20 lcd
+        unsigned char Buffer[4][20];                                            /* a buffer for a 4x20 lcd
+                                                                                 * do not confuse this one with 
+                                                                                 * struct Disp {
+                                                                                 *      unsigned char Buffer[BufferLines][20];
+                                                                                 *              ...
+                                                                                 *  } Display;
+                                                                                 *  in "display.h".
+                                                                                 * this one is the hardware buffer. 
+                                                                                 * If neccessary, this is the place to translate 
+                                                                                 * characters from ascii to whatever the display speaks.
+                                                                                 * my current Display is a Electronic Assembly EAW204-NLED,
+                                                                                 * which happens to speak ascii.
+                                                                                 * /
+                                                                                
         unsigned char LineOffset[4];                                            // for each line, save the memory-offset
         struct {
             unsigned char width;

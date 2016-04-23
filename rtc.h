@@ -27,8 +27,6 @@ extern struct RTC_Time
 
 void IncrementRTC(void);
 
-
-
 #ifdef	__cplusplus
 }
 #endif

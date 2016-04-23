@@ -14,7 +14,23 @@
 #pragma udata VFLD
 extern struct VF_Display {
     char String[11];                // Text Buffer
-    unsigned char Buffer[12][2];    // RAM Buffer
+    unsigned char Buffer[12][2];    // RAM Buffer       /* a buffer for a 4x20 lcd
+             * do not confuse this one with 
+             * struct Disp {
+             *      unsigned char Buffer[BufferLines][20];
+             *              ...
+             *  } Display;
+             *  in "display.h".
+             * this one is the hardware buffer. 
+             * If neccessary, this is the place to translate 
+             * characters from ascii to whatever the display speaks.
+             * this one was written for a display that i harvested from a
+             * broken DVD-Player. It might work for other compatible SPI-Driven 
+             * driven Displays, but you will most likely have to find out 
+             * the bitmaps for your display manually. 
+             * But this one might be already incompatible to display.h
+             * 
+                             * /
     unsigned char Symbol[22];       // Symbol Flags
     unsigned char Duty;
 

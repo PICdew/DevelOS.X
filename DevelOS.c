@@ -175,8 +175,8 @@ void HandleReset(void)
         RCONbits.TO=0;
         OS.RcountWDT++;
     }
-    InitChip();
-    InitGlobals();
+    //InitChip();
+    //InitGlobals();
 }// </editor-fold>
 
 // <editor-fold defaultstate="collapsed" desc="unsigned char addEvent(const unsigned char type, const unsigned int data)">

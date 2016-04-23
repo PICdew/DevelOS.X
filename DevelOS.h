@@ -108,7 +108,8 @@ extern struct OS_State {
     unsigned int                RcountWDT;
     unsigned int                RcountRI;
     unsigned int                RcountSU;
-    unsigned int                RcountSO;// </editor-fold>
+    unsigned int                RcountSO;
+    // </editor-fold>
 } OS;
 
 #pragma udata AD_Data                       // TODO: AD-Funktionen auslagern
