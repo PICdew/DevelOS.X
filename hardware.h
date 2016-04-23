@@ -115,12 +115,12 @@ extern "C" {
     // VFL Display with PT6311 or compatible Controller
     #include "./VFLD.h"
     
-    #define VFLD_STB    		PORTDbits.RD3           // RA4  -> Strobe
-    #define PD6311_STB_TRIS		TRISDbits.TRISD3
+    #define VFLD_STB                    PORTDbits.RD3           // RA4  -> Strobe
+    #define VFLD_STB_TRIS             TRISDbits.TRISD3
     #define VFLD_CLK                    PORTDbits.RD2           // RB3  -> Clock
-    #define PD6311_CLK_TRIS		TRISDbits.TRISD2
+    #define VFLD_CLK_TRIS             TRISDbits.TRISD2
     #define VFLD_DATA                   PORTDbits.RD4           // RD0  -> Data
-    #define PD6311_DIN_TRIS             TRISDbits.TRISD4
+    #define VFLD_DIN_TRIS             TRISDbits.TRISD4
 // </editor-fold>
     
 // <editor-fold defaultstate="collapsed" desc="HD44780/KS0073 compatible LCD, 1-Port">    
