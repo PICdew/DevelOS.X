@@ -175,6 +175,7 @@ extern "C" {
     #define SDA_t                       TRISCbits.TRISC4
     #define SCL                         PORTCbits.RC3
     #define SDA                         PORTCbits.RC4
+    #include "i2c_bitbang.h"
 #endif 
     // </editor-fold>
     
@@ -190,9 +191,6 @@ extern "C" {
 #endif /* MOD_I2C */
 #endif /*MOD_FlashFS_extI2C*/    
 //</editor-fold>
-
-    
-#endif
     
 #ifdef	__cplusplus
 }

@@ -43,13 +43,16 @@
         // stop done
     }//</editor-fold>
 
-    char I2C_ByteIn(char ack)       // <editor-fold defaultstate="collapsed" desc="char I2C_ByteIn(char ack)">
+    unsigned char I2C_ByteIn(char ack)       // <editor-fold defaultstate="collapsed" desc="char I2C_ByteIn(char ack)">
     // Read a byte from the bus, maybe ack it, return the byte
     {
-        char byte,i;
+        unsigned char byte,i;
         byte =0;
         
-        SDA_t = 1;
+        // set SDA input
+        SDA_t = 1;      
+        
+        //clock in 8 bits
         for(i=0;i<8;i++)
         {
             SCL = 1;
@@ -62,8 +65,27 @@
             SCL = 0;
             OS_delay_ns(i2c_bus.Delay);
         }
+        
+        // set SDA output
         SDA_t = 0;
         
+        // set ack/nack
+        if(ack==1)
+        {
+            SDA = 0;
+        }
+        else
+        {
+            SDA = 1;
+        }
+        
+        // clock out the bit
+        SCL = 1;
+        OS_delay_ns(i2c_bus.Delay);
+        SCL = 0;
+        
+        // done, return the byte
+        return byte;
     }//</editor-fold>
         
     char I2C_ByteOut(char byte);    // <editor-fold defaultstate="collapsed" desc="char I2C_ByteOut(char byte)">

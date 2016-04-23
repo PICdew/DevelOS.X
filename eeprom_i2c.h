@@ -12,7 +12,10 @@
 extern "C" {
 #endif
     
-#define I2C_devID   0b10100000      // first 4 bits are the device code
+#define I2C_devID           0b10100000      // first 4 bits are the device code
+    // Adressing Modes
+#define I2C_3Ext_8Int       0x01            // use 3 lower bits of device address for bank switching, 8 bit internal address (e.g. ST24C08)
+#define I2C_0Ext_16Int      0x02            // no external address bits used, but 16 bit internal address (e.g. AT24C32)
     
     //<editor-fold defaultstate="collapsed" desc="List of Supported Devices">
 /* Atmel 2-Wire Serial EEPROM
@@ -69,8 +72,6 @@ extern "C" {
     unsigned char CheckBlock(unsigned char d_adr, unsigned long block);
 
 // Addressing Modes
-#define 3bitExt_8bitInt     0x01    // use 3 lower bits of device address for bank switching, 8 bit internal address (e.g. ST24C08)
-#define 0bitExt_16bitInt    0x02    // no external address bits used, but 16 bit internal address (e.g. AT24C32)
     
 #ifdef	__cplusplus
 }

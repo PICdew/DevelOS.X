@@ -19,7 +19,7 @@ extern "C" {
         unsigned long Delay;                // for the timing of the bus
     } i2c_bus;
     
-    char I2C_ByteIn(char ack);      // Read a byte from the bus, maybe ack it, return the byte
+    unsigned char I2C_ByteIn(char ack);      // Read a byte from the bus, maybe ack it, return the byte
     char I2C_ByteOut(char byte);    // Write a byte to the bus, return the ack
     void I2C_Start(void);           // do the start condition
     void I2C_Stop(void);            // do the stop condition
