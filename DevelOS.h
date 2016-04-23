@@ -28,7 +28,7 @@ extern "C" {
 #define COUNT 9
 #define REFval 10
 
-//#define BOOT_SLOW                           // This will add some delays to the startup process
+#define BOOT_SLOW                           // This will add some delays to the startup process
 #define Startmode           RL_Standby      // OS shall switch to this after booting
 #define ResetToken          0xAA            // this is for resetting the os in debug
 #define EventBuffer         32              // Length of the internal Event Queue

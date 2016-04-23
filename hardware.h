@@ -21,7 +21,7 @@ extern "C" {
 
 #define MOD_rtc
 #define MOD_ADC
-#define MOD_I2C
+//#define MOD_I2C
 //#define MOD_Input_KB_PS2
 //#define MOD_Input_keypad
 //#define MOD_Input_mousewheel
@@ -30,7 +30,7 @@ extern "C" {
 
 #define MOD_FlashFS
 //#define MOD_FlashFS_extSPI        // TODO: Driver for external SPI Flash
-#define MOD_FlashFS_extI2C          // TODO: Driver for external I2C EEPROM
+//#define MOD_FlashFS_extI2C          // TODO: Driver for external I2C EEPROM
     
 #define MOD_Display                     
     //#define MOD_Display_VFLD      // For PT6311 (or compatible) Serial Display Controller

@@ -43,7 +43,7 @@ void InitFlash(void)
 
         if(crc == crc_r)
         {            
-            if(Flash.Data[FFS_ext_devices]>0)
+            /*if(Flash.Data[FFS_ext_devices]>0)
             {
                 for(i=0; i < Flash.Data[FFS_ext_devices] ; i++)
                 {
@@ -71,7 +71,7 @@ void InitFlash(void)
                             break;
                     }
                 }
-            }
+            }*/
         }
         else
         {
@@ -96,12 +96,13 @@ void InitFlash(void)
      * Byte 61  : 16bit : CRC for Block 0
      * Byte 63  : 8bit  : FlashFS Signature Byte
      */ 
+        Flash.eprom.Blocks = Flash.Data[FFS_int_blocks];
         d_cr();
         d_print("EEPROM: \0");
-        d_value( Flash.eprom.Blocks - Flash.eprom.UsedBlocks);
+        d_value( Flash.eprom.UsedBlocks);
         d_print("/\0");
         d_value( Flash.eprom.Blocks );
-        d_print(" Free\n");
+        d_print(" Used\n");
     }
 }
 
