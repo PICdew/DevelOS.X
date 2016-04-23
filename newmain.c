@@ -187,13 +187,6 @@ void Low_ISR(void)
         PIE1bits.ADIE=1;                        //  Enable IRQ
     } // </editor-fold>
     
-    /*if(PIR1bits.SSPIF)          // <editor-fold defaultstate="collapsed" desc="I2C Module">
-    {
-        PIR1bits.SSPIF=0;
-        
-        PIE1bits.SSPIE=1;
-    }// </editor-fold>*/
-    
     INTCONbits.GIEL =1;
 }
 // </editor-fold>
