@@ -168,14 +168,17 @@ extern "C" {
 #endif /* MOD_Display */
 // </editor-fold>
     
-#ifdef MOD_I2C
+// <editor-fold defaultstate="collapsed" desc="I2C BUS BitBang">
+#ifdef MOD_I2C 
     #define I2C_Buffer                  8
     #define SCL_t                       TRISCbits.TRISC3
     #define SDA_t                       TRISCbits.TRISC4
     #define SCL                         PORTCbits.RC3
     #define SDA                         PORTCbits.RC4
-#endif
+#endif 
+    // </editor-fold>
     
+// <editor-fold defaultstate="collapsed" desc="I2C EEPROM">
 #ifdef MOD_FlashFS_extI2C
     #include "eeprom_i2c.h"
 #ifndef MOD_I2C
@@ -186,10 +189,10 @@ extern "C" {
     #define MOD_I2C
 #endif /* MOD_I2C */
 #endif /*MOD_FlashFS_extI2C*/    
+//</editor-fold>
 
     
 #endif
-
     
 #ifdef	__cplusplus
 }
