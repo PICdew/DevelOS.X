@@ -1,7 +1,7 @@
 #include "DevelOS.h"
-#include "i2c_bitbang.h"
 
-    void I2C_Init(void)             // <editor-fold defaultstate="collapsed" desc="void I2C_Init(void)">
+#ifdef MOD_I2C 
+    void I2C_Init(void)                         // <editor-fold defaultstate="collapsed" desc="void I2C_Init(void)">
     {
         char i;
         
@@ -14,7 +14,7 @@
     }   
     //</editor-fold>
     
-    void I2C_Start(void)            // <editor-fold defaultstate="collapsed" desc="void I2C_Start(void)">
+    void I2C_Start(void)                        // <editor-fold defaultstate="collapsed" desc="void I2C_Start(void)">
     // do the start condition
     {
         SDA_t   =0;
@@ -30,7 +30,7 @@
         // start done
     } // </editor-fold>
     
-    void I2C_Stop(void)             // <editor-fold defaultstate="collapsed" desc="void I2C_Stop(void)">   
+    void I2C_Stop(void)                         // <editor-fold defaultstate="collapsed" desc="void I2C_Stop(void)">   
     // do the stop condition
     {
         SDA_t   =0;
@@ -43,7 +43,7 @@
         // stop done
     }//</editor-fold>
 
-    unsigned char I2C_ByteIn(char ack)       // <editor-fold defaultstate="collapsed" desc="char I2C_ByteIn(char ack)">
+    unsigned char I2C_ByteIn(char ack)          // <editor-fold defaultstate="collapsed" desc="char I2C_ByteIn(char ack)">
     // Read a byte from the bus, maybe ack it, return the byte
     {
         unsigned char byte,i;
@@ -79,16 +79,62 @@
             SDA = 1;
         }
         
-        // clock out the bit
+        // clock out the ack bit
         SCL = 1;
         OS_delay_ns(i2c_bus.Delay);
         SCL = 0;
+        OS_delay_ns(i2c_bus.Delay);
         
         // done, return the byte
         return byte;
     }//</editor-fold>
         
-    char I2C_ByteOut(char byte);    // <editor-fold defaultstate="collapsed" desc="char I2C_ByteOut(char byte)">
+    unsigned char I2C_ByteOut(char byte)        // <editor-fold defaultstate="collapsed" desc="char I2C_ByteOut(char byte)">
     // Write a byte to the bus, return the ack
+    {
+        unsigned char i,ack;
+        
+        // set SDA output
+        SDA_t = 0;      
+        
+        //clock out 8 bits
+        for(i=0;i<8;i++)
+        {
+            SCL = 0;
+            if(byte & 0x01)
+            {
+                SDA = 1;
+            }
+            else 
+            {
+                SDA = 0;
+            }
+            byte = byte >> 1;
+            SCL = 1;
+            OS_delay_ns(i2c_bus.Delay);
+        }
+        
+        // set SDA input
+        SDA_t = 1;
+        
+        // clock in ack/nack
+        SCL = 1;
+        OS_delay_ns(i2c_bus.Delay);
+        if(SDA)
+        {
+            ack = 0;
+        }
+        else
+        {
+            ack = 1;
+        }
+        SCL = 0;
+        OS_delay_ns(i2c_bus.Delay);
+        
+        // done, return ack
+        return ack;        
+    }
     //</editor-fold>
+
+#endif  /* MOD_I2C */    
     

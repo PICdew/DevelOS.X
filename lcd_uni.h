@@ -45,7 +45,7 @@ extern "C" {
                                                                                  * characters from ascii to whatever the display speaks.
                                                                                  * my current Display is a Electronic Assembly EAW204-NLED,
                                                                                  * which happens to speak ascii.
-                                                                                 * /
+                                                                                 */
                                                                                 
         unsigned char LineOffset[4];                                            // for each line, save the memory-offset
         struct {

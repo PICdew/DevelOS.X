@@ -12,7 +12,7 @@
 extern "C" {
 #endif
 
-#include <p18cxxx.h>
+
 
 #define Fosc    64000000
  /* Step 1:
@@ -21,7 +21,7 @@ extern "C" {
 
 #define MOD_rtc
 #define MOD_ADC
-//#define MOD_I2C
+#define MOD_I2C
 //#define MOD_Input_KB_PS2
 //#define MOD_Input_keypad
 //#define MOD_Input_mousewheel
@@ -52,7 +52,7 @@ extern "C" {
 #ifdef MOD_FlashFS
     #include "./FlashFS.h"
     #include "./eeprom.h"
-#endif
+#endif/* MOD_FlashFS */
 // </editor-fold>
 
 // <editor-fold defaultstate="collapsed" desc="MOD_SoftPWM">
@@ -170,29 +170,19 @@ extern "C" {
     
 // <editor-fold defaultstate="collapsed" desc="I2C BUS BitBang">
 #ifdef MOD_I2C 
-    #define I2C_Buffer                  64
-    #define SCL_t                       TRISCbits.TRISC3
-    #define SDA_t                       TRISCbits.TRISC4
-    #define SCL                         PORTCbits.RC3
-    #define SDA                         PORTCbits.RC4
     #include "i2c_bitbang.h"
-#endif /* MOD_I2C */
-    // </editor-fold>
-    
-// <editor-fold defaultstate="collapsed" desc="I2C EEPROM">
-#ifdef MOD_FlashFS_extI2C
-#ifndef MOD_I2C                         // implied dependency
     #define I2C_Buffer                  64
     #define SCL_t                       TRISCbits.TRISC3
     #define SDA_t                       TRISCbits.TRISC4
     #define SCL                         PORTCbits.RC3
     #define SDA                         PORTCbits.RC4
-    #define MOD_I2C
-    #include "eeprom_i2c.h"
 #endif /* MOD_I2C */
-#endif /*MOD_FlashFS_extI2C*/    
-//</editor-fold>
-    
+
+#ifdef MOD_FlashFS_extI2C
+    #include "eeprom_i2c.h"
+#endif /* MOD_FlashFS_extI2C */
+    // </editor-fold>
+        
 #ifdef	__cplusplus
 }
 #endif

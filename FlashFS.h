@@ -65,22 +65,6 @@ extern struct Flash_Data {
 #define FFS_Device_1        2
 #define FFS_Device_2        3
 #define FFS_Device_3        4
-#define FFS_Device_4        5
-#define FFS_Device_5        6
-#define FFS_Device_6        7
-#define FFS_Device_7        8
-#define FFS_Device_8        9
-#define FFS_Device_9        10
-#define FFS_Device_10       11
-#define FFS_Device_11       12
-#define FFS_Device_12       13
-#define FFS_Device_13       14
-#define FFS_Device_14       15
-#define FFS_Device_15       16
-#define FFS_Device_16       17
-#define FFS_Device_17       18
-#define FFS_Device_18       19
-#define FFS_Device_19       20
 // if you have more devices, continue here.
 #define FFS_Data_CRC        61   
 #define FFS_signature       63

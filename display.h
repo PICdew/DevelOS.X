@@ -16,21 +16,21 @@
 #ifndef DISPLAY_H
 #define	DISPLAY_H
 
+#include "DevelOS.h"
+
 #ifdef	__cplusplus
 extern "C" {
 #endif
-
-#include "DevelOS.h"
 
 #ifdef MOD_Display
 
 #define DefaultBrightness   7
 #define BufferLines     4                       //TODO: asynchronous buffer shifting
-#define BufferLine      21                      // have a larger buffer, and scroll the display through it independently
+//#define BufferLine      21                      // have a larger buffer, and scroll the display through it independently
                                                 // to reduce Delays. it is basically there, but not really implemented well.
 
     extern struct Disp {
-        unsigned char Buffer[BufferLines][BufferLine];
+        unsigned char Buffer[BufferLines][21];
                                                 /* Linebuffer for Text
                                                  * This is not the Hardware Buffer, this is the internal Line Buffer for the OS
                                                 */

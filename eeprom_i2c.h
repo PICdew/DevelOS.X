@@ -7,17 +7,33 @@
 
 #ifndef EEPROM_I2C_H
 #define	EEPROM_I2C_H
-
+    
 #ifdef	__cplusplus
 extern "C" {
 #endif
     
-#define I2C_devID           0b10100000      // first 4 bits are the device code
+#include "./DevelOS.h"
+#define I2C_Chips 2
+
     // Adressing Modes
 #define I2C_3Ext_8Int       0x01            // use 3 lower bits of device address for bank switching, 8 bit internal address (e.g. ST24C08)
 #define I2C_0Ext_16Int      0x02            // no external address bits used, but 16 bit internal address (e.g. AT24C32)
+ 
+extern struct I2Ceeprom {
+        unsigned char       Daddr;          // device bus base address
+        unsigned long       Delay;          // timing parameter for this device
+        unsigned char       AddressMode;    // how to adress this device
+        unsigned int        MBWsize;        // how many bytes can be written sequencially
+    } i2c_chip;
     
-    //<editor-fold defaultstate="collapsed" desc="List of Supported Devices">
+    unsigned int ReadByte(struct I2Ceeprom device, unsigned int b_adr);
+    unsigned char WriteByte(unsigned char d_adr, unsigned int b_adr, unsigned char byte);
+    unsigned char ReadBlock(unsigned char d_adr, unsigned long block, unsigned char *ram_start_address);
+    unsigned char WriteBlock(unsigned char d_adr, unsigned long block, unsigned char *ram_start_address);
+    unsigned char CheckBlock(unsigned char d_adr, unsigned long block);
+
+// Addressing Modes
+       //<editor-fold defaultstate="collapsed" desc="List of Supported Devices">
 /* Atmel 2-Wire Serial EEPROM
  *  AT24C32 : 32K (4096 x 8)
  *  AT24C64 : 64K (8192 x 8) 
@@ -56,23 +72,8 @@ extern "C" {
      * Byte 18  :
      * Byte 61  : 16bit : CRC for Block 0
      * Byte 63  : 8bit  : FlashFS Signature Byte
-     */ //</editor-fold>
-    
-    struct I2Ceeprom {
-        unsigned char       Daddr;          // device bus base address
-        unsigned long       Delay;          // timing parameter for this device
-        unsigned char       AddressMode;    // how to adress this device
-        unsigned int        MBWsize;        // how many bytes can be written sequencially
-    };
-    
-    unsigned int ReadByte(struct I2Ceeprom, unsigned int b_adr);
-    unsigned char WriteByte(unsigned char d_adr, unsigned int b_adr, unsigned char byte);
-    unsigned char ReadBlock(unsigned char d_adr, unsigned long block, unsigned char *ram_start_address);
-    unsigned char WriteBlock(unsigned char d_adr, unsigned long block, unsigned char *ram_start_address);
-    unsigned char CheckBlock(unsigned char d_adr, unsigned long block);
-
-// Addressing Modes
-    
+     */ 
+    //</editor-fold>
 #ifdef	__cplusplus
 }
 #endif

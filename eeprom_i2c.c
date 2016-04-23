@@ -4,7 +4,7 @@
 
 unsigned int ReadByte(struct I2Ceeprom device, unsigned int b_adr)
 {
-    unsigned char ack,dadr,badr;
+    unsigned char ack, dadr, badr, adr;
     unsigned int byte;
     byte =0;
 
@@ -113,11 +113,11 @@ unsigned int ReadByte(struct I2Ceeprom device, unsigned int b_adr)
 unsigned char WriteByte(unsigned char d_adr, unsigned int b_adr, unsigned char byte)
 {
     unsigned char ack,dadr,badr;
-    unsigned int byte;
-    byte =0;
+    unsigned int tbyte;
+    tbyte =0;
 
     // set speed for this device
-    i2c_bus.Delay = device.Delay;
+    //i2c_bus.Delay = device.Delay;
     // start 
     
     // write d_adr, wait for ack
@@ -181,5 +181,5 @@ unsigned char CheckBlock(unsigned char d_adr, unsigned long block)
     // read Block and calculate CRC
     // compare CRCs and return error code
 }
-#endif
 
+#endif /* MOD_FlashFS_extI2C */

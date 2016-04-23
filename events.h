@@ -49,4 +49,3 @@ extern "C" {
 #endif
 
 #endif	/* EVENTS_H */
-

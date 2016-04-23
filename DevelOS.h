@@ -18,6 +18,7 @@ extern "C" {
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <p18cxxx.h>
 
 #include "./runlevel.h"
 #include "./events.h"
@@ -36,9 +37,8 @@ extern "C" {
 #define ISR_HF_Count        2               // Number of HF-Counters for the ISR-Routine. 
                                             // These are like programmable software-timers, running at (Fosc / 4) /256
 /* Remember: The high priority ISR will go through a loop for the HF and LF Count. So it is important to keep these numbers as low as possible */
-#define DefaultBrightness   7
 
-#pragma udata OS_Data
+#pragma udata OS_Data    
 extern struct OS_State {        
     // <editor-fold defaultstate="collapsed" desc="OS_State">
 
@@ -161,4 +161,3 @@ int crc16(char* ptr, char len);
 #endif
 
 #endif	/* DEVELOS_H */
-
