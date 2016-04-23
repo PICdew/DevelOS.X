@@ -10,7 +10,7 @@ void InitFlash(void)
     unsigned char tmp;
     unsigned int temp;
     signed char err;
-
+    
     Flash.eprom.UsedBlocks=0;
     
     for(i=0;i<EE_Blocks;i++)
@@ -42,48 +42,36 @@ void InitFlash(void)
         crc_r   |= ((unsigned char) Flash.Data[FFS_Data_CRC+1]);
 
         if(crc == crc_r)
-        {
-            Flash.eprom.Blocks      = Flash.Data[FFS_int_blocks];
-            /*for(i=0; i < Flash.Data[FFS_ext_devices] ; i++)
+        {            
+            if(Flash.Data[FFS_ext_devices]>0)
             {
-                // Read info from each device
-                //CloseI2C();
-                //OpenI2C(MASTER, SLEW_OFF);
-
-                temp    = EERandomRead( Flash.Data[FFS_Device_1+i], EE_Blocksize);
-                tmp     = (char) temp & 0x00FF;
-                err     = (signed char) ( temp >> 8 ) & 0x00FF;
-                
-                if( err <= 0)
+                for(i=0; i < Flash.Data[FFS_ext_devices] ; i++)
                 {
-                    // Bus Error
-                }
-                else if(tmp != EE_sig_FlashFS)
-                {
-                    // new or invalid device
-                    temp    = EEByteWrite( Flash.Data[FFS_Device_1+i], EE_Blocksize, EE_sig_FlashFS );
-                    temp    = EERandomRead( Flash.Data[FFS_Device_1+i], EE_Blocksize);
-                    tmp     = (char) temp & 0x00FF;
-                    err     = (signed char) ( temp >> 8 ) & 0x00FF;
-                    if( err <= 0)
+                    unsigned char type,dadr,adr;
+                    char err;
+                    
+                    adr = Flash.Data[FFS_Device0 + i];
+                    dadr = adr & 0xA0;
+                    type = adr & 0xF0;
+                    err = adr;
+                    
+                    switch(type)
                     {
-                        // Bus Error
-                    }
-                    else if(tmp != EE_sig_FlashFS)
-                    {
-                        // invalid device
-                    }
-                    else
-                    {
-                        // new device, format
+                        case I2C_EEPROM:
+                            #ifdef MOD_FlashFS_extI2C
+                            err = i2c_chip_init(dadr, I2C_Delay_100khz, I2C_3Ext_8Int, 0);
+                            #endif
+                            break;
+                        case I2C_EEPROM_16:
+                            #ifdef MOD_FlashFS_extI2C
+                            err = i2c_chip_init(dadr, I2C_Delay_100khz, I2C_0Ext_16Int, 0);
+                            #endif
+                            break;
+                        default:
+                            break;
                     }
                 }
-                else
-                {
-                    // seems good, read data
-                }
-                //CloseI2C();
-            }*/
+            }
         }
         else
         {
@@ -92,21 +80,22 @@ void InitFlash(void)
             InitFlash();            
         }
         
-        // Byte 0   : How many Blocks does this device have internal?
-        // Byte 1   : How many external devices do we have?
-        // Byte 2   : external adress for first external device
-        //            for i2c devices, the first 4 bits are fixed.
-        //            so we will use them as identifier for the type of device
-        //            0b1001 = spi eeprom
-        //            0b1010 = i2c eeprom with 8bit internal adressing
-        //            0b1011 = i2c eeprom with 16bit internal adressing
-        //            This allows up to 16 diffrent drivers to handle up to 16 devices each
-        // Byte 3   : external adress for second external device
-        // ......
-        // Byte 58  : external adress for last external device
-        //            this allows up to 57 external devices
-        // Byte 59  : 32 bit CRC checksum for FlashFS Block
-        // Byte 63  : EE_sig_FlashFS
+        /* Block 0
+     * Device Data
+     * Byte 0   : 32bit : Delay Value of this Device
+     *                      tells us how fast the device can go
+     * Byte 4   : 32bit : number of 64 byte blocks on the device
+     *                      up to 255 Gigabytes per Device (whoa!)
+     * Byte 8   : 32bit : number of used Blocks 
+     * Byte 12  : 32bit : start of CRC-Block
+     *                      if zero   : none
+     *                      else      : store 16 bit Checksum for each Block on the device
+     *                                  takes one CRC-Block for 32 Data Blocks
+     * Byte 16  : 16bit : Maximum transfer size for multibyte write
+     * Byte 18  :
+     * Byte 61  : 16bit : CRC for Block 0
+     * Byte 63  : 8bit  : FlashFS Signature Byte
+     */ 
         d_cr();
         d_print("EEPROM: \0");
         d_value( Flash.eprom.Blocks - Flash.eprom.UsedBlocks);

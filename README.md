@@ -22,9 +22,9 @@ keypad.h        : driver for matrix keypad. analog high speed readout.
 
 ps2-keyboard.h  : i had this one semi-working, but without parity check and re-send.
 
-lcd_uni.h       : Hitachi HD44780/KS0073 or compatible 4bit LCD Driver. with arbitrary Pinout
+lcd_uni.h       : Hitachi HD44780/Samsung KS0073 or compatible 4bit LCD Driver. with arbitrary Pinout
 
-lcd.h           : Hitachi HD44780/KS0073 or compatible 4bit LCD Driver. all Pins on one Port
+lcd.h           : Hitachi HD44780/Samsung KS0073 or compatible 4bit LCD Driver. all Pins on one Port
 
 VFLD.h          : Princeton Technology PT6311 or compatible VFD Driver
 

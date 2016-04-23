@@ -1,8 +1,67 @@
 #include "DevelOS.h"
 
+#ifdef MOD_FlashFS
 #ifdef MOD_FlashFS_extI2C
 
-unsigned int ReadByte(struct I2Ceeprom device, unsigned int b_adr)
+
+char i2c_chip_init(unsigned int     Daddr,          // device bus base address
+                    unsigned long   Delay,          // timing parameter for this device
+                    unsigned char   AddressMode,    // how to adress this device
+                    unsigned char   MBWsize         // how many bytes can be written sequencially
+)
+{
+    int crc,crc_t,result;
+    unsigned char byte,err,i;
+    unsigned long delay_t;
+    
+    i2c_chip.AddressMode=AddressMode;
+    i2c_chip.Daddr=Daddr;
+    i2c_chip.Delay=Delay;
+    i2c_chip.MBWsize=MBWsize;
+    
+    result = I2C_eeReadByte(i2c_chip, I2C_DDB_sig);
+    byte = result & 0x00FF;
+    err = result >>8; 
+
+    if( err != 0xf0)
+    {
+        if(byte == EE_sig_FlashFS)
+        {
+            err = I2C_eeReadBlock(i2c_chip, 0, &i2c_bus.Buffer);
+            crc = i2c_bus.Buffer[I2C_DDB_crc];
+            crc = crc << 8;
+            crc |= (i2c_bus.Buffer[I2C_DDB_crc]&0x00FF);
+            crc_t = crc16(&i2c_bus.Buffer[I2C_DDB_crc], EE_Blocksize-4);
+            if(crc == crc_t)
+            {
+                //valid data Block
+                for(i=0;i<4;i++)
+                {
+                    delay_t += i2c_bus.Buffer[I2C_DDB_delay+i];
+                    delay_t = delay_t << 8;            
+                }
+                i2c_chip.Delay=delay_t;
+                i2c_chip.MBWsize=i2c_bus.Buffer[I2C_DDB_mbw];
+                return 1;
+            }
+            else
+            {
+                return -1;  // Device Data Block corrupted
+            }
+        }
+        else
+        {
+            return -2;      // chip unformated
+        }
+    }
+    else
+    {
+            return -3;      // invalid chip or bus error
+    }
+}
+
+// <editor-fold defaultstate="collapsed" desc="unsigned int I2C_eeReadByte(struct I2Ceeprom device, unsigned int b_adr)">
+unsigned int I2C_eeReadByte(struct I2Ceeprom device, unsigned int b_adr)
 {
     unsigned char ack, dadr, badr, adr;
     unsigned int byte;
@@ -60,7 +119,7 @@ unsigned int ReadByte(struct I2Ceeprom device, unsigned int b_adr)
         I2C_Start();
 
         // determine address
-        adr = device.Daddr ;
+        adr = device.Daddr & 0x00AF;
 
         // write d_adr, wait for ack
         ack = I2C_ByteOut(adr);
@@ -109,8 +168,10 @@ unsigned int ReadByte(struct I2Ceeprom device, unsigned int b_adr)
     // return byte
     return byte;
 }
+//</editor-fold>
 
-unsigned char WriteByte(unsigned char d_adr, unsigned int b_adr, unsigned char byte)
+// <editor-fold defaultstate="collapsed" desc="unsigned char I2C_eeWriteByte(struct I2Ceeprom device, unsigned int b_adr, unsigned char byte)">
+unsigned char I2C_eeWriteByte(struct I2Ceeprom device, unsigned int b_adr, unsigned char byte)
 {
     unsigned char ack,dadr,badr;
     unsigned int tbyte;
@@ -126,8 +187,10 @@ unsigned char WriteByte(unsigned char d_adr, unsigned int b_adr, unsigned char b
     // stop
     // return error code
 }
+//</editor-fold>
 
-unsigned char ReadBlock(unsigned char d_adr, unsigned long block, unsigned char *ram_start_address)
+// <editor-fold defaultstate="collapsed" desc="unsigned char I2C_eeReadBlock(struct I2Ceeprom device, unsigned long block, unsigned char *ram_start_address)">
+char I2C_eeReadBlock(struct I2Ceeprom device, unsigned long block, unsigned char *ram_start_address)
 {
     char i;
     // determine start address of block
@@ -144,8 +207,10 @@ unsigned char ReadBlock(unsigned char d_adr, unsigned long block, unsigned char 
     // stop
     // return error code
 }
+// </editor-fold>
 
-unsigned char WriteBlock(unsigned char d_adr, unsigned long block, unsigned char *ram_start_address)
+// <editor-fold defaultstate="collapsed" desc="unsigned char I2C_eeWriteBlock(struct I2Ceeprom device, unsigned long block, unsigned char *ram_start_address)">
+unsigned char I2C_eeWriteBlock(struct I2Ceeprom device, unsigned long block, unsigned char *ram_start_address)
 {
     unsigned char loops;
     char i,j;
@@ -172,8 +237,10 @@ unsigned char WriteBlock(unsigned char d_adr, unsigned long block, unsigned char
     
     // return error code
 }
+//</editor-fold>
 
-unsigned char CheckBlock(unsigned char d_adr, unsigned long block)
+// <editor-fold defaultstate="collapsed" desc="unsigned char I2C_eeCheckBlock(struct I2Ceeprom device, unsigned long block)">
+unsigned char I2C_eeCheckBlock(struct I2Ceeprom device, unsigned long block)
 {
     // determine address of CRC on device
     // determine start address of block
@@ -181,5 +248,7 @@ unsigned char CheckBlock(unsigned char d_adr, unsigned long block)
     // read Block and calculate CRC
     // compare CRCs and return error code
 }
+//</editor-fold>
 
 #endif /* MOD_FlashFS_extI2C */
+#endif /* MOD_FlashFS */

@@ -179,6 +179,7 @@ extern "C" {
 #endif /* MOD_I2C */
 
 #ifdef MOD_FlashFS_extI2C
+    #include "i2c_bitbang.h"
     #include "eeprom_i2c.h"
 #endif /* MOD_FlashFS_extI2C */
     // </editor-fold>

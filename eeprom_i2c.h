@@ -13,24 +13,33 @@ extern "C" {
 #endif
     
 #include "./DevelOS.h"
+
 #define I2C_Chips 2
 
     // Adressing Modes
 #define I2C_3Ext_8Int       0x01            // use 3 lower bits of device address for bank switching, 8 bit internal address (e.g. ST24C08)
 #define I2C_0Ext_16Int      0x02            // no external address bits used, but 16 bit internal address (e.g. AT24C32)
  
+#pragma udata I2C_Data
 extern struct I2Ceeprom {
-        unsigned char       Daddr;          // device bus base address
+        unsigned int        Daddr;          // device bus base address
         unsigned long       Delay;          // timing parameter for this device
         unsigned char       AddressMode;    // how to adress this device
-        unsigned int        MBWsize;        // how many bytes can be written sequencially
+        unsigned char       MBWsize;        // how many bytes can be written sequencially
     } i2c_chip;
+#pragma udata
     
-    unsigned int ReadByte(struct I2Ceeprom device, unsigned int b_adr);
-    unsigned char WriteByte(unsigned char d_adr, unsigned int b_adr, unsigned char byte);
-    unsigned char ReadBlock(unsigned char d_adr, unsigned long block, unsigned char *ram_start_address);
-    unsigned char WriteBlock(unsigned char d_adr, unsigned long block, unsigned char *ram_start_address);
-    unsigned char CheckBlock(unsigned char d_adr, unsigned long block);
+    char i2c_chip_init(unsigned int     Daddr,          // device bus base address
+                        unsigned long   Delay,          // timing parameter for this device
+                        unsigned char   AddressMode,    // how to adress this device
+                        unsigned char   MBWsize         // how many bytes can be written sequencially
+    );
+    
+    unsigned int I2C_eeReadByte(struct I2Ceeprom device, unsigned int b_adr);
+    unsigned char I2C_eeWriteByte(struct I2Ceeprom device, unsigned int b_adr, unsigned char byte);
+    char I2C_eeReadBlock(struct I2Ceeprom device, unsigned long block, unsigned char *ram_start_address);
+    unsigned char I2C_eeWriteBlock(struct I2Ceeprom device, unsigned long block, unsigned char *ram_start_address);
+    unsigned char I2C_eeCheckBlock(struct I2Ceeprom device, unsigned long block);
 
 // Addressing Modes
        //<editor-fold defaultstate="collapsed" desc="List of Supported Devices">
@@ -68,11 +77,18 @@ extern struct I2Ceeprom {
      *                      if zero   : none
      *                      else      : store 16 bit Checksum for each Block on the device
      *                                  takes one CRC-Block for 32 Data Blocks
-     * Byte 16  : 16bit : Maximum transfer size for multibyte write
-     * Byte 18  :
+     * Byte 16  : 8bit  : Maximum transfer size for multibyte write
+     * Byte 17  :
      * Byte 61  : 16bit : CRC for Block 0
      * Byte 63  : 8bit  : FlashFS Signature Byte
      */ 
+#define I2C_DDB_delay   0
+#define I2C_DDB_blocks  4
+#define I2C_DDB_crc_blk 12
+#define I2C_DDB_mbw     16
+#define I2C_DDB_crc     61
+#define I2C_DDB_sig     63
+    
     //</editor-fold>
 #ifdef	__cplusplus
 }
