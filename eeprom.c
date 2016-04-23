@@ -14,7 +14,7 @@ void EE_format(void)
 
     d_cr();
     d_print("Formating ...\0");
-    //RefreshDisplay(); 
+    RefreshDisplay(); 
     for(i=0;i<EE_Blocksize;i++)
     {
         temp[i]=EE_sig_Free;
@@ -40,9 +40,9 @@ void EE_format(void)
         temp[i]=0;
     }
     temp[0]                 = 16;           // we have 16*64=1024 bytes on a 18F 46K20
-    temp[1]                 = 2;            // have 2 external eeproms on i2c
-    temp[2]                 = 0b10100000;   // Atmel 32 kbit
-    temp[3]                 = 0b10101000;   // ST 8 kbit
+    temp[1]                 = 0;            // have 2 external eeproms on i2c
+    temp[2]                 = 0xB0;         // Atmel 32 kbit
+    temp[3]                 = 0xA8;         // ST 8 kbit
     crc                     = crc16(&temp, EE_Blocksize-4);
     byte                    = (unsigned char)( (crc >> 8) & 0xFF);
     temp[FFS_Data_CRC]      = byte;

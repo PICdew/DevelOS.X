@@ -40,37 +40,32 @@ extern struct Flash_Data {
     } eprom;
                                         // Block 0   : FlashFS internal Data
                                         // Block 1   : DevelOS internal Data
-                                        // Block 2+3 : Keypad Calibration Data (for MOD_Input_keypad )
+                                        // Block 2+3 : Buffer for paging
     } Flash; // </editor-fold>
     
     void InitFlash(void);
 
 //    <editor-fold defaultstate="collapsed" desc="#defines for easy access to Data Block">
-        // Byte 0   : How many Blocks does this device have internal?
-        // Byte 1   : How many external devices do we have?
-        // Byte 2   : external adress for first external device
-        //            for i2c devices, the first 4 bits are fixed.
-        //            so we will use them as identifier for the type of device
-        //            0b1001 = spi eeprom
-        //            0b1010 = i2c eeprom with 8bit internal adressing
-        //            0b1011 = i2c eeprom with 16bit internal adressing
-        //            This allows up to 16 diffrent drivers to handle up to 16 devices each
-        // Byte 3   : external adress for second external device
+        // Byte 0   : 8bit  : How many Blocks does this device have internal?
+        // Byte 1   : 8bit  : How many external devices do we have?
+        // Byte 2   : 8bit  : external adress for first external device
+        // Byte 3   : 8bit  : external adress for second external device
         // ......
-        // Byte 58  : external adress for last external device
-        //            this allows up to 57 external devices
-        // Byte 59  : 32 bit CRC checksum for FlashFS Block
+        // Byte 60  : 8bit  : external adress for last external device. This allows up to 58 external devices
+        // Byte 61  : 16bit : CRC checksum for FlashFS Block
+        // Byte 63  : 8bit  : FlashFS Signature Byte
 #define FFS_int_blocks      0
 #define FFS_ext_devices     1
-#define FFS_Device_1        2
-#define FFS_Device_2        3
-#define FFS_Device_3        4
-// if you have more devices, continue here.
+#define FFS_Device0         2
 #define FFS_Data_CRC        61   
 #define FFS_signature       63
 
     // </editor-fold>
     
+    // device type identifiers
+#define I2C_EEPROM          0xA0
+#define I2C_EEPROM_16       0xB0
+
 #endif
 
 #ifdef	__cplusplus

@@ -15,7 +15,7 @@
 extern struct VF_Display {
     char String[11];                // Text Buffer
     unsigned char Buffer[12][2];    // RAM Buffer       
-            /* a buffer for a 4x20 lcd
+            /* a buffer for VFL Display
              * do not confuse this one with 
              * struct Disp {
              *      unsigned char Buffer[BufferLines][20];

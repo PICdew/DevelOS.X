@@ -21,7 +21,7 @@ extern "C" {
 
 #define MOD_rtc
 #define MOD_ADC
-#define MOD_I2C
+//#define MOD_I2C
 //#define MOD_Input_KB_PS2
 //#define MOD_Input_keypad
 //#define MOD_Input_mousewheel
@@ -30,7 +30,7 @@ extern "C" {
 
 #define MOD_FlashFS
 //#define MOD_FlashFS_extSPI        // TODO: Driver for external SPI Flash
-#define MOD_FlashFS_extI2C          // TODO: Driver for external I2C EEPROM
+//#define MOD_FlashFS_extI2C          // TODO: Driver for external I2C EEPROM
     
 #define MOD_Display                     
     //#define MOD_Display_VFLD      // For PT6311 (or compatible) Serial Display Controller
@@ -115,12 +115,12 @@ extern "C" {
     // VFL Display with PT6311 or compatible Controller
     #include "./VFLD.h"
     
-    #define VFLD_STB    		PORTDbits.RD3           // RA4  -> Strobe
-    #define PD6311_STB_TRIS		TRISDbits.TRISD3
+    #define VFLD_STB                    PORTDbits.RD3           // RA4  -> Strobe
+    #define VFLD_STB_TRIS             TRISDbits.TRISD3
     #define VFLD_CLK                    PORTDbits.RD2           // RB3  -> Clock
-    #define PD6311_CLK_TRIS		TRISDbits.TRISD2
+    #define VFLD_CLK_TRIS             TRISDbits.TRISD2
     #define VFLD_DATA                   PORTDbits.RD4           // RD0  -> Data
-    #define PD6311_DIN_TRIS             TRISDbits.TRISD4
+    #define VFLD_DIN_TRIS             TRISDbits.TRISD4
 // </editor-fold>
     
 // <editor-fold defaultstate="collapsed" desc="HD44780/KS0073 compatible LCD, 1-Port">    
@@ -179,6 +179,7 @@ extern "C" {
 #endif /* MOD_I2C */
 
 #ifdef MOD_FlashFS_extI2C
+    #include "i2c_bitbang.h"
     #include "eeprom_i2c.h"
 #endif /* MOD_FlashFS_extI2C */
     // </editor-fold>

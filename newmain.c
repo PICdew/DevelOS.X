@@ -9,7 +9,6 @@
 #include "./main.h"
 #include "./configbits.h"
 #include "./DevelOS.h"
-#define EE_1k
 
 /*
  * Now, we declare the global Variables:
@@ -55,16 +54,27 @@ volatile struct Counter isr_lf_count[ISR_LF_Count], isr_hf_count[ISR_HF_Count];
 #if defined MOD_FlashFS
     #pragma udata Flash
     struct Flash_Data Flash;
-    //struct EEPROM eprom;
     #pragma udata
 #endif /* MOD_FlashFS */
+
+#if defined MOD_FlashFS_extI2C
+    #pragma udata I2C_Data
+    struct I2Ceeprom  i2c_chip;
+    #pragma udata
+#endif /* MOD_FlashFS_extI2C */
+
+#if defined MOD_I2C
+    #pragma udata I2C_Data
+    struct I2C_BUS i2c_bus;
+    #pragma udata 
+#endif /* MOD_I2C */
 
 #if defined MOD_Input_KB_PS2
     volatile struct KB_PS2 Keyboard;
 #endif /* MOD_Input_KB_PS2 */
 
 #ifdef MOD_I2C
-    #pragma udata i2c
+    #pragma udata I2C_Data
     struct I2C_BUS i2c_bus;
     #pragma udata
 #endif /* MOD_I2C */
@@ -217,8 +227,6 @@ void main(void)
 
     // Display Init
     InitDisplay();
-    
-    
     RefreshDisplay();
     #ifdef BOOT_SLOW 
     OS_delay_ns(10000000);
