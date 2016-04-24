@@ -20,15 +20,17 @@
           <itemPath>ps2-keyboard.h</itemPath>
           <itemPath>keypad.h</itemPath>
         </logicalFolder>
-        <itemPath>rtc.h</itemPath>
         <itemPath>i2c_bitbang.h</itemPath>
       </logicalFolder>
-      <itemPath>main.h</itemPath>
-      <itemPath>DevelOS.h</itemPath>
-      <itemPath>hardware.h</itemPath>
-      <itemPath>runlevel.h</itemPath>
-      <itemPath>configbits.h</itemPath>
-      <itemPath>events.h</itemPath>
+      <logicalFolder name="f2" displayName="System" projectFiles="true">
+        <itemPath>runlevel.h</itemPath>
+        <itemPath>hardware.h</itemPath>
+        <itemPath>events.h</itemPath>
+        <itemPath>DevelOS.h</itemPath>
+        <itemPath>configbits.h</itemPath>
+        <itemPath>main.h</itemPath>
+        <itemPath>rtc.h</itemPath>
+      </logicalFolder>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -56,9 +58,11 @@
         <itemPath>rtc.c</itemPath>
         <itemPath>i2c_bitbang.c</itemPath>
       </logicalFolder>
+      <logicalFolder name="f2" displayName="System" projectFiles="true">
+        <itemPath>runlevel.c</itemPath>
+        <itemPath>DevelOS.c</itemPath>
+      </logicalFolder>
       <itemPath>newmain.c</itemPath>
-      <itemPath>DevelOS.c</itemPath>
-      <itemPath>runlevel.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
@@ -161,6 +165,7 @@
         <property key="ToolFirmwareFilePath"
                   value="Press to browse for a specific firmware version"/>
         <property key="ToolFirmwareOption.UseLatestFirmware" value="true"/>
+        <property key="firmware.download.all" value="false"/>
         <property key="hwtoolclock.frcindebug" value="false"/>
         <property key="memories.aux" value="false"/>
         <property key="memories.bootflash" value="false"/>

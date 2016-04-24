@@ -1,3 +1,6 @@
+# PIC build files
+build/
+
 # Windows image file caches
 Thumbs.db
 ehthumbs.db

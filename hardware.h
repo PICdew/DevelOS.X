@@ -12,32 +12,39 @@
 extern "C" {
 #endif
 
-
-
-#define Fosc    64000000
- /* Step 1:
+#define Fosc    64000000        // if using external resonator, we need this
+    
+/* Step 1:
  * Comment/UnComment modules as needed by application
  */
 
-#define MOD_rtc
-#define MOD_ADC
-//#define MOD_I2C
-//#define MOD_Input_KB_PS2
-//#define MOD_Input_keypad
-//#define MOD_Input_mousewheel
-//#define MOD_SoftPWM
-//#define MOD_HardPWM
-
-#define MOD_FlashFS
-//#define MOD_FlashFS_extSPI        // TODO: Driver for external SPI Flash
-//#define MOD_FlashFS_extI2C          // TODO: Driver for external I2C EEPROM
+    // Core Modules. These should not be disabled
+#define MOD_rtc                     // real time clock. needed for system timing
+#define MOD_ADC                     // ad converters. needed to track physical environment
+#define MOD_FlashFS                 // needed for access to internal eeprom
+#define MOD_Console                 // TODO: abstraction layer for UART,Display and Input Modules
+#define MOD_UART                    // TODO: serial console
     
-#define MOD_Display                     
-    //#define MOD_Display_VFLD      // For PT6311 (or compatible) Serial Display Controller
-    #define MOD_Display_LCD_Uni     // For KS0073/HD44780 or compatible LCD, with arbitrary Pinout
-    //#define MOD_Display_LCD       // For KS0073 (or compatible) 4/8bit Display Controller, all Pins on one Port
+    // Additional Modules
+//#define MOD_I2C                   // I2C Driver, not using MSSP module
+//#define MOD_FlashFS_extSPI        // TODO: Driver for external SPI Flash
+//#define MOD_FlashFS_extI2C        // Driver for I2C eeprom devices. unfinished
+//#define MOD_SoftPWM               // TODO: PWM Output on any Pin, controlled by software timers.
+//#define MOD_HardPWM               // TODO: PWM Output using the PIC hardware CCPWM module
+
+    // Input Modules
+//#define MOD_Input_KB_PS2          // unfinished but somehow working
+//#define MOD_Input_keypad          // untested for long time, maybe incompatible with newer interface
+//#define MOD_Input_mousewheel      // unfinished
+
+    // Output Modules
+#define MOD_Display                 // Abstraction Layer to unify access to display hardware
+//#define MOD_Display_VFLD          // For PT6311 (or compatible) Serial Display Controller
+#define MOD_Display_LCD_Uni         // For KS0073/HD44780 or compatible LCD, with arbitrary Pinout
+//#define MOD_Display_LCD           // For KS0073 (or compatible) 4/8bit Display Controller, all Pins on one Port. more efficient, but restricted pinout
                                     // TODO: Make LCD_Uni compatible with LCD
 
+    
 /* Step 2:
  * define the Port-Pins you wish to use.
  */
