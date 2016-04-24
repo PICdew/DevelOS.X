@@ -1,5 +1,5 @@
-# PIC build files
-#build/
+# local PIC build files
+build/
 
 # Windows image file caches
 Thumbs.db
