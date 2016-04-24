@@ -37,6 +37,9 @@ extern "C" {
     // HF-Timer SubEvents
 #define EV_HFT_rtc      0x00
 #define EV_HFT_display  0x01
+
+    // OS error Codes
+#define EV_E_RLinv      0x00    // invalid runlevel
     
     // I2C error codes
 #define EV_i2cerr_of    0x00    // Overflow error

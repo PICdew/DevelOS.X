@@ -7,9 +7,13 @@
             <file>file:/C:/Users/Steffi/MPLABXProjects/DevelOS.X/FlashFS.c</file>
             <file>file:/C:/Users/Steffi/MPLABXProjects/DevelOS.X/eeprom_i2c.c</file>
             <file>file:/C:/Users/Steffi/MPLABXProjects/DevelOS.X/eeprom_i2c.h</file>
+            <file>file:/C:/Users/Steffi/MPLABXProjects/DevelOS.X/FlashFS.h</file>
+            <file>file:/C:/Users/Steffi/MPLABXProjects/DevelOS.X/DevelOS.h</file>
             <file>file:/C:/Users/Steffi/MPLABXProjects/DevelOS.X/DevelOS.c</file>
             <file>file:/C:/Users/Steffi/MPLABXProjects/DevelOS.X/eeprom.c</file>
             <file>file:/C:/Users/Steffi/MPLABXProjects/DevelOS.X/newmain.c</file>
+            <file>file:/C:/Users/Steffi/MPLABXProjects/DevelOS.X/display.c</file>
+            <file>file:/C:/Users/Steffi/MPLABXProjects/DevelOS.X/hardware.h</file>
         </group>
     </open-files>
 </project-private>

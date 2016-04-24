@@ -43,7 +43,7 @@ extern struct Flash_Data {
                                         // Block 2+3 : Buffer for paging
     } Flash; // </editor-fold>
     
-    void InitFlash(void);
+    char InitFlash(void);
 
 //    <editor-fold defaultstate="collapsed" desc="#defines for easy access to Data Block">
         // Byte 0   : 8bit  : How many Blocks does this device have internal?

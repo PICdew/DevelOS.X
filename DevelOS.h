@@ -138,17 +138,18 @@ extern const rom char PWMstring[6][11];
 */
 
 // Functions in DevelOS.c
+void OS_HandleReset(void);
+void OS_InitGlobals(void);
+void OS_InitChip(void);
 void InitOS(void);
+
 void OS_Stuff(void);
 void OS_delay_ns(unsigned long nanoseconds);
 unsigned long getCPUClock(void);
 unsigned long reflect (unsigned long crc, int bitnum) ;
-unsigned long crc32(unsigned char* p, unsigned long len);
-void InitChip(void);
-void InitGlobals(void);
 void Wait1S(void);
 void ConvertVoltages(void);
-void HandleReset(void);
+
 unsigned char addEvent(const unsigned char type, const unsigned int data);
 void delEvent(void);
 void ScanADC(void);

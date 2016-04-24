@@ -24,7 +24,7 @@ char position;
 // <editor-fold defaultstate="collapsed" desc="char InitLCD(void)">
 char InitLCD(void)
 {
-    char i,cmd,byte;
+    char i,cmd,byte,x,y;
 
     for(i=0;i<20;i++)
     {
@@ -106,6 +106,23 @@ char InitLCD(void)
     }
     else
     {
+        // clear hardware Buffer
+        for(y=0;y<LCDuni_Lines;y++)
+        {
+            for(x=0;x<LCDuni_Cols;x++)
+            {
+                LCD.Buffer[y][x]=' ';
+            }
+        }
+        // set memory offsets
+        LCD.LineOffset[0]=0x00;
+        LCD.LineOffset[1]=0x40;
+        LCD.LineOffset[2]=0x14;
+        LCD.LineOffset[3]=0x54;
+        LCD.Dimensions.height = LCDuni_Lines;
+        LCD.Dimensions.width = LCDuni_Cols;
+        LCD.Busy = 0;
+        LCD.Light = 1;        
         return 0;
     }
 }
@@ -116,6 +133,12 @@ void RefreshLCD(void)
 {
     unsigned char x,y,upperNibble,lowerNibble;
     
+    if(LCD.Busy == 1)
+    {
+        return;
+    }
+    
+    LCD.Busy = 1;
     for(y=0;y<LCD.Dimensions.height;y++)
     {
         unsigned char cmd = LCD_Command[LCD_CMD_sda] | LCD.LineOffset[y];
@@ -140,6 +163,7 @@ void RefreshLCD(void)
             //LCD_WriteByte(LCD.Buffer[y][x], (LCD.LineOffset[y]+x) );
         }
     }
+    LCD.Busy = 0;
 }
 //</editor-fold>
 

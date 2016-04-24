@@ -25,12 +25,12 @@ extern "C" {
 #ifdef MOD_Display
 
 #define DefaultBrightness   7
-#define BufferLines     4                       //TODO: asynchronous buffer shifting
+#define BufferLines     10                       //TODO: asynchronous buffer shifting
 //#define BufferLine      21                      // have a larger buffer, and scroll the display through it independently
                                                 // to reduce Delays. it is basically there, but not really implemented well.
 
     extern struct Disp {
-        unsigned char Buffer[BufferLines][21];
+        unsigned char Buffer[BufferLines][20];
                                                 /* Linebuffer for Text
                                                  * This is not the Hardware Buffer, this is the internal Line Buffer for the OS
                                                 */
@@ -40,7 +40,7 @@ extern "C" {
         unsigned char cursor_y;                 // Cursor Position
         unsigned char view_x;                   //
         unsigned char view_y;                   // Viewport. Vorerst nur Zeile
-        unsigned char light;                    // for backlight switching/dimming
+        unsigned char light;                    // TODO: for backlight switching/dimming
     } Display;
 
     void InitDisplay(void);                     // Hardware Specific Initialisation

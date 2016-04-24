@@ -57,6 +57,12 @@ volatile struct Counter isr_lf_count[ISR_LF_Count], isr_hf_count[ISR_HF_Count];
     #pragma udata
 #endif /* MOD_FlashFS */
 
+#ifdef MOD_I2C
+    #pragma udata I2C_Data
+    struct I2C_BUS i2c_bus;
+    #pragma udata
+#endif /* MOD_I2C */
+
 #if defined MOD_FlashFS_extI2C
     #pragma udata I2C_Data
     struct I2Ceeprom  i2c_chip;
@@ -72,18 +78,6 @@ volatile struct Counter isr_lf_count[ISR_LF_Count], isr_hf_count[ISR_HF_Count];
 #if defined MOD_Input_KB_PS2
     volatile struct KB_PS2 Keyboard;
 #endif /* MOD_Input_KB_PS2 */
-
-#ifdef MOD_I2C
-    #pragma udata I2C_Data
-    struct I2C_BUS i2c_bus;
-    #pragma udata
-#endif /* MOD_I2C */
-
-#ifdef MOD_FlashFS_extI2C
-    #pragma udata i2c
-    struct I2Ceeprom I2C_eprom;
-    #pragma udata
-#endif
 
 // </editor-fold>
 
@@ -211,92 +205,22 @@ void Low_ISR(void)
 void main(void)
 {
     // temp variables for the main() loop must be defined here
-    unsigned char i=0;
+    unsigned char i =0;
+    signed char err =0;
+    
 
     // First of all, look if this was an reset, and why
-    HandleReset();
+    OS_HandleReset();
 
     // Then, initialize global variables
-    InitGlobals();
+    OS_InitGlobals();
     
     // Now, Init the Chip Hardware
-    InitChip();
+    OS_InitChip();
     
     // Init OS to sane values
     InitOS();
 
-    // Display Init
-    InitDisplay();
-    RefreshDisplay();
-    #ifdef BOOT_SLOW 
-    OS_delay_ns(10000000);
-    #endif
-    
-    d_cr();
-    d_print("DevelOS-16 v0.1\0");
-    RefreshDisplay();
-    #ifdef BOOT_SLOW
-    OS_delay_ns(5000000);
-    #endif
-    
-#ifdef MOD_FlashFS
-    // Init FlashFS
-    d_cr();
-    d_print("FlashFS\0");
-    RefreshDisplay();
-    #ifdef BOOT_SLOW
-    OS_delay_ns(5000000);
-    #endif
-    InitFlash();
-    RefreshDisplay();
-    #ifdef BOOT_SLOW
-    OS_delay_ns(5000000);
-    #endif /* BOOT_SLOW */
-    
-    // Load EEPROM Data
-    for(i=0;i<EE_Blocks;i++)
-    {
-        switch(Flash.eprom.Block[i].signature)
-        {
-            case EE_sig_FlashFS:
-                // TODO: use this block somehow
-                // it should store info on the other blocks,
-                // checksums, and info on external eeprom chips
-                d_cr();
-                d_print("FlashFS at \0");
-                d_value(i);
-                RefreshDisplay();        
-                #ifdef BOOT_SLOW
-                OS_delay_ns(5000000);
-                #endif /* BOOT_SLOW */
-                break;
-            case EE_sig_System:
-                // This holds all the static settings for the OS
-                d_cr();
-                d_print("DevelOS at \0");
-                d_value(i);
-                RefreshDisplay();     
-                #ifdef BOOT_SLOW
-                OS_delay_ns(5000000);
-                #endif /* BOOT_SLOW */
-                LoadEEPROM_OS(i);
-                break;
-            default:
-                break;
-        }
-    }
-#endif /* MOD_FlashFS */
-    
-    // Init Keyboard/Input
-#ifdef MOD_Input_KB_PS2
-    InitKB_PS2();
-#endif
-    
-    #ifdef BOOT_SLOW
-    OS_delay_ns(5000000);
-    #endif /* BOOT_SLOW */
-
-    d_clr();
     // do application specific inits here
     
     while(1)
@@ -307,14 +231,111 @@ void main(void)
         // Now come the runlevels
         switch(OS.runlevel)
         {
-            case RL_Boot:           // <editor-fold defaultstate="collapsed" desc="RL_Boot">   
-                // After Booting the OS, switch to runlevel defined in DevelOS.h
-                OS_SetRunlevel(Startmode);
-                break;//</editor-fold>
-            case RL_Standby:        // <editor-fold defaultstate="collapsed" desc="RL_Stanby">
+            case RL_Boot:           
+                // <editor-fold defaultstate="collapsed" desc="RL_Boot">  
+                switch(OS.runmode)
+                {
+                    d_print("DevelOS-16 v0.1\n\0");
+                    case RL_Boot_Display:       
+                        // <editor-fold defaultstate="collapsed" desc="RL_Boot_Display"> 
+                        // Display Init
+                        d_print("Display: \0");
+                        InitDisplay();
+                        addEvent(EV_Display, 0);
+                        //RefreshDisplay();
+                        OS.runmode++;
+                        //</editor-fold>
+                        break;
+                    case RL_Boot_FlashFS:       
+                        // <editor-fold defaultstate="collapsed" desc="RL_Boot_FlashFS">
+                        // Init FlashFS
+                        #ifdef MOD_FlashFS
+                            #ifdef BOOT_SLOW 
+                                OS_delay_ns(10000000);
+                            #endif
+                            d_print("FlashFS\n\0");
+                            err = InitFlash();
+                            addEvent(EV_Display, 0);
+                        #endif /* MOD_FlashFS */
+                        OS.runmode++;
+                        //</editor-fold>
+                        break;
+                    case RL_Boot_Load:          
+                        // <editor-fold defaultstate="collapsed" desc="RL_Boot_Load">
+                        // Load EEPROM Data  
+                        #ifdef BOOT_SLOW
+                            OS_delay_ns(10000000);
+                        #endif /* BOOT_SLOW */
+                        for(i=0;i<EE_Blocks;i++)
+                        {
+                            switch(Flash.eprom.Block[i].signature)
+                            {
+                                case EE_sig_FlashFS:
+                                    d_print("FlashFS at \0");
+                                    d_value(i);
+                                    d_print("\n\0");
+                                    //RefreshDisplay();        
+                                    break;
+                                case EE_sig_System:
+                                    // This holds all the static settings for the OS
+                                    d_print("DevelOS at \0");
+                                    d_value(i);
+                                    d_print("\n\0");
+                                    //RefreshDisplay();     
+                                    LoadEEPROM_OS(i);
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                        addEvent(EV_Display, 0);
+                        OS.runmode++;
+                        //</editor-fold>
+                        break;
+                    case RL_Boot_Input:
+                        // <editor-fold defaultstate="collapsed" desc="RL_Boot_Input">
+                        #ifdef BOOT_SLOW
+                        OS_delay_ns(10000000);
+                        #endif /* BOOT_SLOW */
+                        
+                        // Init Keyboard/Input
+                        #ifdef MOD_Input_KB_PS2
+                            InitKB_PS2();
+                        #endif
+                            addEvent(EV_Display, 0);
+                        OS.runmode++;
+                        // </editor-fold>
+                        break;
+                    default:
+                        // <editor-fold defaultstate="collapsed" desc="default">
+                        if(OS.runmode >= RL_Boot_Done)
+                        {
+                            // After Booting the OS, switch to runlevel defined in DevelOS.h
+                            #ifdef BOOT_SLOW
+                            OS_delay_ns(10000000);
+                            #endif /* BOOT_SLOW */
+                            OS_SetRunlevel(Startmode);
+                            d_clr();
+                            addEvent(EV_Display, 0);
+                        }
+                        else
+                        {
+                            OS.runmode++;
+                        }
+                        // </editor-fold>
+                        break;
+                }
+                //</editor-fold>
+                break;
+            case RL_Standby:        
+                // <editor-fold defaultstate="collapsed" desc="RL_Stanby">
                 DoStandby();
-                break;//</editor-fold>
+                //</editor-fold>
+                break;
             default:
+                // <editor-fold defaultstate="collapsed" desc="Runlevel invalid">
+                addEvent(EV_Error, EV_E_RLinv);     // invalid runlevel
+                // </editor-fold>
                 break;
         }
     }

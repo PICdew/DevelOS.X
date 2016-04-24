@@ -142,7 +142,9 @@ extern "C" {
 #elif defined MOD_Display_LCD_Uni
     // HD44780 compatible LCD
     // 4-bit Mode, arbitrary Pinout
-    // this will be hardcoded to 4x20 Display for now
+    // this will be only tested for 4x20 Display for now
+    #define LCDuni_Lines    4
+    #define LCDuni_Cols     20
     #include "./lcd_uni.h"
     
     #define TRIS_EN         TRISDbits.TRISD5
