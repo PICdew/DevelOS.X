@@ -125,6 +125,27 @@ void OS_InitGlobals(void)      // Initialize Global Variables
     Display.light=1;    // if light is only switched, it should be on by default. if dimmed, this should set minimum
 #endif /* MOD_Display */
     
+#if defined MOD_UART
+    uart.rx_bytes = 0;
+    uart.tx_bytes = 0;
+    uart.baud = 1;
+    uart.busy = 0;
+    for(x=0;x<RX_BUFF_SIZE;x++)
+    {
+        uart.rx_buff[x] = 0;
+    }
+    for(x=0;x<TX_BUFF_SIZE;x++)
+    {
+        uart.tx_buff[x] = 0;
+    }
+#endif /* MOD_UART */
+    
+#ifdef MOD_Console
+    for(x=0;x<CMD_Buffer;x++)
+    {
+        console.command[x] = 0;
+    }
+#endif /* MOD_Console */
 }// </editor-fold>
 
 // <editor-fold defaultstate="collapsed" desc="void OS_InitChip(void)">
@@ -157,11 +178,11 @@ void OS_InitChip(void)         // Configure the Hardware Modules
     //ADCON0bits.GO =1;         // Start ADC
     
     // Disable unused A/D-Chans
- /* ANSELHbits.ANS8=1;
+    ANSELHbits.ANS8=1;
     ANSELHbits.ANS9=1;
     ANSELHbits.ANS10=1;
     ANSELHbits.ANS11=1;
-    ANSELHbits.ANS12=1;*/
+    ANSELHbits.ANS12=1;
     #endif
     
     // Timer0 as HF counter (rtc etc.)
@@ -208,13 +229,30 @@ void OS_InitChip(void)         // Configure the Hardware Modules
     T2CONbits.TMR2ON = 1;
     #endif /* MOD_HardPWM */
 
+    // UART Module
+    #ifdef MOD_UART
+    BAUDCONbits.BRG16=1;        // set Baudrate Generator to 16bit mode
+    TXSTAbits.BRGH=1;           // set Baudrate Multiplier
+    SPBRGH=BAUD_H;              // set high byte of Baudrate
+    SPBRG=BAUD_L;               // set low byte of Baudrate
+    RX_t = 1;                   // set TRIS bits as input
+    TX_t = 1;                   // set TRIS bits as input
+    TXSTAbits.SYNC=0;           // set usart to async mode
+    RCSTAbits.CREN=1;           // enable reciever circuit
+    RCSTAbits.SPEN=1;           // enable the module
+    TXSTAbits.TXEN=1;           // enable the transmitter. this will set the interrupt flag
+    #endif /* MOD_UART */
+    
     // configure irq priority
     RCONbits.IPEN = 1;          // enable priority
     INTCON2bits.TMR0IP = 1;     // Timer 0  : High Priority
     IPR1bits.TMR1IP = 1;        // Timer 1  : High Priority
     PIR1bits.TMR2IF = 0;        // Timer 2  : Low Priority
     IPR1bits.ADIP = 0;          // ADC      : Low Priority
-    IPR1bits.SSPIP = 0;         // I2C      : Low Priority
+    #ifdef MOD_UART
+    IPR1bits.TXIP=0;            // UART tx  : Low Priority
+    IPR1bits.RCIP=0;            // UART rx  : Low Priority
+    #endif /* MOD_UART */
 
     // reset flags and enable irqs
     INTCONbits.TMR0IF = 0;          // Timer 0
@@ -226,6 +264,13 @@ void OS_InitChip(void)         // Configure the Hardware Modules
     PIR1bits.ADIF = 0;          // clear AD interrupt
     PIE1bits.ADIE = 1;          // enable AD interrupt
     #endif /* MOD_ADC */
+    
+    #ifdef MOD_UART
+    PIR1bits.TXIF=0;            // reset tx interrupt flag
+    PIE1bits.TXIE=1;            // enable tx interrupt
+    PIR1bits.RCIF=0;            // reset rx interrupt flag
+    PIE1bits.RCIE=1;            // enable rx interrupt
+    #endif /* MOD_UART */
 
     #ifdef MOD_Input_KB_PS2         // INT0 for PS2-Keyboard
     INTCONbits.INT0IF = 0;
@@ -337,8 +382,8 @@ void delEvent(void)
         OS.numEvents--;
 }// </editor-fold>
 
-// <editor-fold defaultstate="collapsed" desc="void OS_Stuff(void)">
-void OS_Stuff(void)
+// <editor-fold defaultstate="collapsed" desc="void OS_Event(void)">
+void OS_Event(void)
 {
     char temp;
     OS.Loopcount++;
@@ -362,6 +407,7 @@ void OS_Stuff(void)
             break;//</editor-fold>
             
         case EV_KeyMake:    // <editor-fold defaultstate="collapsed" desc="EV_KeyMake">
+            #ifdef MOD_Input_KB_PS2
             temp=OS.Event[0].eventData;
             if( temp == 0x13)                   // Enter Key
             {
@@ -381,6 +427,10 @@ void OS_Stuff(void)
                 Display.Buffer[Display.cursor_y][Display.cursor_x++]=temp;
             }
             delEvent();
+            #else   /* MOD_Input_KB_PS2 */
+            addEvent(EV_Error, EV_E_EVinv);
+            delEvent();
+            #endif /* MOD_Input_KB_PS2 */
             break;//</editor-fold>
             
         case EV_LF_Timer:   // <editor-fold defaultstate="collapsed" desc="EV_LF_Timer">
@@ -415,7 +465,7 @@ void OS_Stuff(void)
             break;//</editor-fold>
             
         case EV_ScanMake:   // <editor-fold defaultstate="collapsed" desc="EV_ScanMake">
-#ifdef MOD_Input_KB_PS2
+            #ifdef MOD_Input_KB_PS2
             if( (OS.Event[0].eventData == 0x12) | (OS.Event[0].eventData == 0x59) )
             {
                 Keyboard.Shift=1;
@@ -428,12 +478,15 @@ void OS_Stuff(void)
             {
                 addEvent( EV_KeyMake, getKeyCode( OS.Event[0].eventData ));
             }
-#endif
             delEvent();
+            #else   /* MOD_Input_KB_PS2 */
+            addEvent(EV_Error, EV_E_EVinv);
+            delEvent();
+            #endif /* MOD_Input_KB_PS2 */
             break;//</editor-fold>
             
         case EV_ScanBreak:  // <editor-fold defaultstate="collapsed" desc="EV_ScanBreak">
-#ifdef MOD_Input_KB_PS2
+            #ifdef MOD_Input_KB_PS2
             if( (OS.Event[0].eventData == 0x12) | (OS.Event[0].eventData == 0x59) )
             {
                 Keyboard.Shift=0;
@@ -446,8 +499,11 @@ void OS_Stuff(void)
             {
                 addEvent( EV_KeyBreak, getKeyCode( OS.Event[0].eventData ));
             }
-#endif
             delEvent();
+            #else   /* MOD_Input_KB_PS2 */
+            addEvent(EV_Error, EV_E_EVinv);
+            delEvent();
+            #endif /* MOD_Input_KB_PS2 */
             break;//</editor-fold>
             
         case EV_Display:    // <editor-fold defaultstate="collapsed" desc="EV_Display">
@@ -468,13 +524,97 @@ void OS_Stuff(void)
             {
                 delEvent();
             }*/
+            delEvent();
             break;//</editor-fold>
             
-        default:
-            // unknown message
-            //addEvent(EV_Error, OS.Event[0].eventType);
+        case EV_uart_error: // <editor-fold defaultstate="collapsed" desc="EV_uart_error">
+            // do something about it
+            switch(OS.Event[0].eventData)
+            {
+                case EV_E_uart_frame:
+                    // recieve frame error
+                    break;
+                case EV_E_uart_of:
+                    // buffer overflow
+                    break;
+                default:
+                    // unknown error
+                    break;
+            }
             delEvent();
-            break;
+            break;//</editor-fold>
+            
+        case EV_uart_rx:    // <editor-fold defaultstate="collapsed" desc="EV_uart_rx">
+            #ifdef MOD_UART
+            // recieved byte
+            if(OS.Event[0].eventData == '\r')
+            {
+                // command recieved
+                // copy uart rx buffer to command buffer
+                
+                // clear buffer
+                for(temp=0;temp<RX_BUFF_SIZE;temp++)
+                {
+                    uart.rx_buff[temp] = 0;
+                }
+                uart.rx_bytes=0;
+            }
+            else
+            {
+                if(uart.rx_bytes<RX_BUFF_SIZE)
+                {
+                    uart.rx_buff[uart.rx_bytes] = OS.Event[0].eventData;
+                    uart.rx_bytes++;
+                }
+                else
+                {
+                    addEvent(EV_uart_error, EV_E_uart_iof);
+                    uart.rx_bytes=0;
+                    for(temp=0;temp<RX_BUFF_SIZE;temp++)
+                    {
+                        uart.rx_buff[temp] = 0;
+                    }
+                }
+            }
+            delEvent();
+            #else   /* MOD_UART */
+            addEvent(EV_Error, EV_E_EVinv);
+            delEvent();
+            #endif /* MOD_UART */
+            break;//</editor-fold>
+            
+        case EV_uart_tx:    // <editor-fold defaultstate="collapsed" desc="EV_uart_tx">
+            #ifdef MOD_UART
+            // transmitted byte
+            if( uart.tx_bytes > 0 )
+            {
+                // send next byte
+                TXREG = uart.tx_buff[TX_BUFF_SIZE-uart.tx_bytes];
+                TXSTAbits.TXEN=1;
+                uart.tx_bytes--;
+            }
+            else
+            {
+                // no more bytes to send
+                // clear buffer
+                uart.tx_bytes=0;
+                for(temp=0;temp<TX_BUFF_SIZE;temp++)
+                {
+                    uart.tx_buff[temp] = 0;
+                }
+            }
+            delEvent();
+            #else   /* MOD_UART */
+            addEvent(EV_Error, EV_E_EVinv);
+            delEvent();
+            #endif /* MOD_UART */
+            break;//</editor-fold>
+            
+        default:            // <editor-fold defaultstate="collapsed" desc="Unhandled Event">
+            // unknown message
+            addEvent(EV_Error, EV_E_EVinv);
+            delEvent();
+            break;//</editor-fold>
     }
 }// </editor-fold>
 
@@ -649,6 +789,49 @@ void Wait1S(void)           // Do Nothing
    Delay10KTCYx(250);
    Delay10KTCYx(250);
 
+}// </editor-fold>
+
+// <editor-fold defaultstate="collapsed" desc="void float2string(char * output, float value)">
+void float2string(char * output, float value)
+{
+    //char string[10];
+    char temp[3]={0,0,0};
+    //int count=0;
+    int tmp=0;
+    float max_p=100;
+    float min_p=0.001;
+    float p=max_p;
+    char pre=0;
+
+    if(value > (max_p * 10)-1 )
+        return;
+
+    while(p >= min_p)
+    {
+        tmp=0;
+        temp[0]=0;
+        temp[1]=0;
+        temp[2]=0;
+
+        while(value > p)
+        {
+            value -= p ;
+            tmp++;
+            pre=1;
+        }
+        if(tmp>0 | pre)
+        {
+            //itoa(temp, tmp, 16);
+            strcat (output, temp);
+        }
+
+        p=p/10;
+        if(p==1)
+            pre=1;
+
+        if(p==0.1)
+            strcat (output, ".");
+    }
 }// </editor-fold>
 
 /*

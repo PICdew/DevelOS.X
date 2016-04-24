@@ -91,10 +91,15 @@ void d_print(const char* string[])
         {
             byte=0;
         }
-        else if(byte=='\n')     // on newline: do carriage return, also terminate string for now
+        else if(byte=='\n')     // on newline: do carriage return, also terminate string
         {
             d_cr();
             byte=0;
+        }
+        else if(byte=='\r')
+        {
+            d_cr();
+            byte=' ';
         }
     }
 }

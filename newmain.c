@@ -79,6 +79,17 @@ volatile struct Counter isr_lf_count[ISR_LF_Count], isr_hf_count[ISR_HF_Count];
     volatile struct KB_PS2 Keyboard;
 #endif /* MOD_Input_KB_PS2 */
 
+#if defined MOD_UART
+#pragma udata UART                          // uart data
+struct UART_DATA uart;
+#pragma udata
+#endif /* MOD_UART */
+
+#if defined MOD_Console
+#pragma udata CON
+struct CONSOLE console;
+#pragma udata
+#endif /* MOD_Console */
 // </editor-fold>
 
 /*
@@ -181,7 +192,7 @@ void Low_ISR(void)
     unsigned int temp;
     unsigned char tmp;
     
-    if(PIR1bits.ADIF)           // <editor-fold defaultstate="collapsed" desc="ADC Module">
+    if(PIR1bits.ADIF)       // <editor-fold defaultstate="collapsed" desc="ADC Module">
     {
         PIR1bits.ADIF=0;                        //  Clear IRQ
         
@@ -189,6 +200,39 @@ void Low_ISR(void)
         temp+=ADRESH*256;
 
         PIE1bits.ADIE=1;                        //  Enable IRQ
+    } // </editor-fold>
+    
+    if(PIR1bits.RCIF)       // <editor-fold defaultstate="collapsed" desc="UART rx">
+    {
+        PIR1bits.RCIF=0;
+        if(RCSTAbits.FERR)
+        {
+            addEvent(EV_uart_error, EV_E_uart_frame);
+            tmp=RCREG;
+        }else if(RCSTAbits.OERR)
+        {
+            addEvent(EV_uart_error, EV_E_uart_of);
+            tmp=RCREG;
+        }else{
+            tmp=RCREG;
+            addEvent(EV_uart_rx, tmp);
+            #ifdef UART_echo
+            TXREG=tmp;
+            TXSTAbits.TXEN=1;
+            #endif /* UART_echo */
+        }
+        PIE1bits.RCIE=1;
+    } // </editor-fold>
+    
+    if(PIR1bits.TXIF)       // <editor-fold defaultstate="collapsed" desc="UART tx">
+    {
+        PIR1bits.TXIF=0;
+        addEvent(EV_uart_tx, 0);
+        if(TXSTAbits.TRMT)
+        {
+            TXSTAbits.TXEN=0;
+        }
+        PIE1bits.TXIE=1;
     } // </editor-fold>
     
     INTCONbits.GIEL =1;
@@ -226,7 +270,7 @@ void main(void)
     while(1)
     {
         // Do OS own stuff here
-        OS_Stuff();
+        OS_Event();
         
         // Now come the runlevels
         switch(OS.runlevel)

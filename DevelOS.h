@@ -143,7 +143,7 @@ void OS_InitGlobals(void);
 void OS_InitChip(void);
 void InitOS(void);
 
-void OS_Stuff(void);
+void OS_Event(void);
 void OS_delay_ns(unsigned long nanoseconds);
 unsigned long getCPUClock(void);
 unsigned long reflect (unsigned long crc, int bitnum) ;
@@ -155,6 +155,7 @@ void delEvent(void);
 void ScanADC(void);
 void OS_SetRunlevel(unsigned char runlevel);
 int crc16(char* ptr, char len);
+void float2string(char * output, float value);
 
 
 #ifdef	__cplusplus

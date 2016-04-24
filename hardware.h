@@ -60,6 +60,24 @@ extern "C" {
     #include "./FlashFS.h"
     #include "./eeprom.h"
 #endif/* MOD_FlashFS */
+
+#ifdef MOD_Console
+    #define CMD_Buffer      32
+    #include "console.h"
+#endif /* MOD_Console */
+// </editor-fold>
+    
+// <editor-fold defaultstate="collapsed" desc="MOD_UART">
+#ifdef MOD_UART
+    #define RX_BUFF_SIZE    32              // also determines max command line
+    #define TX_BUFF_SIZE    32              // save memory
+    #include "./uart.h"
+    #define BAUD_H          BAUD_H__300
+    #define BAUD_L          BAUD_L__300
+    #define TX_t            TRISCbits.TRISC6
+    #define RX_t            TRISCbits.TRISC7
+    #define UART_echo
+#endif /* MOD_UART */
 // </editor-fold>
 
 // <editor-fold defaultstate="collapsed" desc="MOD_SoftPWM">

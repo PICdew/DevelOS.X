@@ -45,17 +45,17 @@ OBJECTDIR=build/${CND_CONF}/${IMAGE_TYPE}
 DISTDIR=dist/${CND_CONF}/${IMAGE_TYPE}
 
 # Source Files Quoted if spaced
-SOURCEFILES_QUOTED_IF_SPACED=lcd.c VFLD.c display.c lcd_uni.c eeprom.c FlashFS.c eeprom_i2c.c keypad.c ps2-keyboard.c rtc.c i2c_bitbang.c newmain.c runlevel.c DevelOS.c
+SOURCEFILES_QUOTED_IF_SPACED=lcd.c VFLD.c display.c lcd_uni.c eeprom.c FlashFS.c eeprom_i2c.c keypad.c ps2-keyboard.c rtc.c i2c_bitbang.c newmain.c runlevel.c DevelOS.c uart.c
 
 # Object Files Quoted if spaced
-OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/lcd.o ${OBJECTDIR}/VFLD.o ${OBJECTDIR}/display.o ${OBJECTDIR}/lcd_uni.o ${OBJECTDIR}/eeprom.o ${OBJECTDIR}/FlashFS.o ${OBJECTDIR}/eeprom_i2c.o ${OBJECTDIR}/keypad.o ${OBJECTDIR}/ps2-keyboard.o ${OBJECTDIR}/rtc.o ${OBJECTDIR}/i2c_bitbang.o ${OBJECTDIR}/newmain.o ${OBJECTDIR}/runlevel.o ${OBJECTDIR}/DevelOS.o
-POSSIBLE_DEPFILES=${OBJECTDIR}/lcd.o.d ${OBJECTDIR}/VFLD.o.d ${OBJECTDIR}/display.o.d ${OBJECTDIR}/lcd_uni.o.d ${OBJECTDIR}/eeprom.o.d ${OBJECTDIR}/FlashFS.o.d ${OBJECTDIR}/eeprom_i2c.o.d ${OBJECTDIR}/keypad.o.d ${OBJECTDIR}/ps2-keyboard.o.d ${OBJECTDIR}/rtc.o.d ${OBJECTDIR}/i2c_bitbang.o.d ${OBJECTDIR}/newmain.o.d ${OBJECTDIR}/runlevel.o.d ${OBJECTDIR}/DevelOS.o.d
+OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/lcd.o ${OBJECTDIR}/VFLD.o ${OBJECTDIR}/display.o ${OBJECTDIR}/lcd_uni.o ${OBJECTDIR}/eeprom.o ${OBJECTDIR}/FlashFS.o ${OBJECTDIR}/eeprom_i2c.o ${OBJECTDIR}/keypad.o ${OBJECTDIR}/ps2-keyboard.o ${OBJECTDIR}/rtc.o ${OBJECTDIR}/i2c_bitbang.o ${OBJECTDIR}/newmain.o ${OBJECTDIR}/runlevel.o ${OBJECTDIR}/DevelOS.o ${OBJECTDIR}/uart.o
+POSSIBLE_DEPFILES=${OBJECTDIR}/lcd.o.d ${OBJECTDIR}/VFLD.o.d ${OBJECTDIR}/display.o.d ${OBJECTDIR}/lcd_uni.o.d ${OBJECTDIR}/eeprom.o.d ${OBJECTDIR}/FlashFS.o.d ${OBJECTDIR}/eeprom_i2c.o.d ${OBJECTDIR}/keypad.o.d ${OBJECTDIR}/ps2-keyboard.o.d ${OBJECTDIR}/rtc.o.d ${OBJECTDIR}/i2c_bitbang.o.d ${OBJECTDIR}/newmain.o.d ${OBJECTDIR}/runlevel.o.d ${OBJECTDIR}/DevelOS.o.d ${OBJECTDIR}/uart.o.d
 
 # Object Files
-OBJECTFILES=${OBJECTDIR}/lcd.o ${OBJECTDIR}/VFLD.o ${OBJECTDIR}/display.o ${OBJECTDIR}/lcd_uni.o ${OBJECTDIR}/eeprom.o ${OBJECTDIR}/FlashFS.o ${OBJECTDIR}/eeprom_i2c.o ${OBJECTDIR}/keypad.o ${OBJECTDIR}/ps2-keyboard.o ${OBJECTDIR}/rtc.o ${OBJECTDIR}/i2c_bitbang.o ${OBJECTDIR}/newmain.o ${OBJECTDIR}/runlevel.o ${OBJECTDIR}/DevelOS.o
+OBJECTFILES=${OBJECTDIR}/lcd.o ${OBJECTDIR}/VFLD.o ${OBJECTDIR}/display.o ${OBJECTDIR}/lcd_uni.o ${OBJECTDIR}/eeprom.o ${OBJECTDIR}/FlashFS.o ${OBJECTDIR}/eeprom_i2c.o ${OBJECTDIR}/keypad.o ${OBJECTDIR}/ps2-keyboard.o ${OBJECTDIR}/rtc.o ${OBJECTDIR}/i2c_bitbang.o ${OBJECTDIR}/newmain.o ${OBJECTDIR}/runlevel.o ${OBJECTDIR}/DevelOS.o ${OBJECTDIR}/uart.o
 
 # Source Files
-SOURCEFILES=lcd.c VFLD.c display.c lcd_uni.c eeprom.c FlashFS.c eeprom_i2c.c keypad.c ps2-keyboard.c rtc.c i2c_bitbang.c newmain.c runlevel.c DevelOS.c
+SOURCEFILES=lcd.c VFLD.c display.c lcd_uni.c eeprom.c FlashFS.c eeprom_i2c.c keypad.c ps2-keyboard.c rtc.c i2c_bitbang.c newmain.c runlevel.c DevelOS.c uart.c
 
 
 CFLAGS=
@@ -201,6 +201,14 @@ ${OBJECTDIR}/DevelOS.o: DevelOS.c  nbproject/Makefile-${CND_CONF}.mk
 	@${DEP_GEN} -d ${OBJECTDIR}/DevelOS.o 
 	@${FIXDEPS} "${OBJECTDIR}/DevelOS.o.d" $(SILENT) -rsi ${MP_CC_DIR}../ -c18 
 	
+${OBJECTDIR}/uart.o: uart.c  nbproject/Makefile-${CND_CONF}.mk
+	@${MKDIR} "${OBJECTDIR}" 
+	@${RM} ${OBJECTDIR}/uart.o.d 
+	@${RM} ${OBJECTDIR}/uart.o 
+	${MP_CC} $(MP_EXTRA_CC_PRE) -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -p$(MP_PROCESSOR_OPTION) -k -oi -w1 -ms -pa=2 --extended -I ${MP_CC_DIR}\\..\\h  -fo ${OBJECTDIR}/uart.o   uart.c 
+	@${DEP_GEN} -d ${OBJECTDIR}/uart.o 
+	@${FIXDEPS} "${OBJECTDIR}/uart.o.d" $(SILENT) -rsi ${MP_CC_DIR}../ -c18 
+	
 else
 ${OBJECTDIR}/lcd.o: lcd.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}" 
@@ -313,6 +321,14 @@ ${OBJECTDIR}/DevelOS.o: DevelOS.c  nbproject/Makefile-${CND_CONF}.mk
 	${MP_CC} $(MP_EXTRA_CC_PRE) -p$(MP_PROCESSOR_OPTION) -k -oi -w1 -ms -pa=2 --extended -I ${MP_CC_DIR}\\..\\h  -fo ${OBJECTDIR}/DevelOS.o   DevelOS.c 
 	@${DEP_GEN} -d ${OBJECTDIR}/DevelOS.o 
 	@${FIXDEPS} "${OBJECTDIR}/DevelOS.o.d" $(SILENT) -rsi ${MP_CC_DIR}../ -c18 
+	
+${OBJECTDIR}/uart.o: uart.c  nbproject/Makefile-${CND_CONF}.mk
+	@${MKDIR} "${OBJECTDIR}" 
+	@${RM} ${OBJECTDIR}/uart.o.d 
+	@${RM} ${OBJECTDIR}/uart.o 
+	${MP_CC} $(MP_EXTRA_CC_PRE) -p$(MP_PROCESSOR_OPTION) -k -oi -w1 -ms -pa=2 --extended -I ${MP_CC_DIR}\\..\\h  -fo ${OBJECTDIR}/uart.o   uart.c 
+	@${DEP_GEN} -d ${OBJECTDIR}/uart.o 
+	@${FIXDEPS} "${OBJECTDIR}/uart.o.d" $(SILENT) -rsi ${MP_CC_DIR}../ -c18 
 	
 endif
 

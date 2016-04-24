@@ -30,6 +30,8 @@
         <itemPath>configbits.h</itemPath>
         <itemPath>main.h</itemPath>
         <itemPath>rtc.h</itemPath>
+        <itemPath>uart.h</itemPath>
+        <itemPath>console.h</itemPath>
       </logicalFolder>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
@@ -61,6 +63,7 @@
       <logicalFolder name="f2" displayName="System" projectFiles="true">
         <itemPath>runlevel.c</itemPath>
         <itemPath>DevelOS.c</itemPath>
+        <itemPath>uart.c</itemPath>
       </logicalFolder>
       <itemPath>newmain.c</itemPath>
     </logicalFolder>
