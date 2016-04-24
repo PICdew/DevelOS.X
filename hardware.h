@@ -63,6 +63,8 @@ extern "C" {
 
 #ifdef MOD_Console
     #define CMD_Buffer      32
+    #define CON_width       32
+    #define CON_lines       4
     #include "console.h"
 #endif /* MOD_Console */
 // </editor-fold>

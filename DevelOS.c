@@ -145,6 +145,7 @@ void OS_InitGlobals(void)      // Initialize Global Variables
     {
         console.command[x] = 0;
     }
+    c_clr();
 #endif /* MOD_Console */
 }// </editor-fold>
 

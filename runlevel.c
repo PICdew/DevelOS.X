@@ -7,20 +7,24 @@ void DoStandby(void)
     // TODO: Try to reduce the core clock in this mode to save energy
     // But beware: so far this has always messed up everything
     unsigned char temp,tempx;
-    temp=Display.cursor_y;
-    tempx=Display.cursor_x;
-    d_pos(0,0);
-    d_print("Up: \0");
-    d_value(rtc.hour);
-    d_print(":\0");
-    d_value(rtc.mins);
-    d_print(":\0");
-    d_value(rtc.secs);
-    d_print("   \0");
-    d_pos(14,0);
-    d_value(OS.CPUClock/1000);
-    d_print("MHz\0");
-    d_pos(tempx,temp);
+    unsigned char strbuff[3];
+    unsigned char tmp[20]="Up: ";
+    //temp=Display.cursor_y;
+    //tempx=Display.cursor_x;
+    
+    sprintf( &strbuff, "%u02", rtc.hour);
+    strcat(&tmp, strbuff);
+    strcat(tmp, ":");
+    sprintf( &strbuff, "%u02", rtc.mins);
+    strcat(&tmp, strbuff);
+    strcat(&tmp, ":");
+    sprintf( &strbuff, "%u02", rtc.secs);
+    strcat(&tmp, strbuff);
+    strcat(&tmp, "   ");
+    sprintf( &strbuff, "%u02", (OS.CPUClock/1000) );
+    strcat(&tmp, " MHz");
+    c_print(tmp);
+    //temp = sendString("TEST\0",4);
 }
 // </editor-fold>
 

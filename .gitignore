@@ -1,6 +1,7 @@
 # local PIC build files
 build/
 dist/
+*.err
 
 # Windows image file caches
 Thumbs.db

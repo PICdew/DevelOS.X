@@ -16,11 +16,18 @@
           <itemPath>FlashFS.h</itemPath>
           <itemPath>eeprom_i2c.h</itemPath>
         </logicalFolder>
+        <logicalFolder name="f4" displayName="I2C" projectFiles="true">
+          <itemPath>i2c_bitbang.h</itemPath>
+        </logicalFolder>
         <logicalFolder name="f3" displayName="Input" projectFiles="true">
           <itemPath>ps2-keyboard.h</itemPath>
           <itemPath>keypad.h</itemPath>
         </logicalFolder>
-        <itemPath>i2c_bitbang.h</itemPath>
+        <logicalFolder name="f5" displayName="System" projectFiles="true">
+          <itemPath>console.h</itemPath>
+          <itemPath>rtc.h</itemPath>
+          <itemPath>uart.h</itemPath>
+        </logicalFolder>
       </logicalFolder>
       <logicalFolder name="f2" displayName="System" projectFiles="true">
         <itemPath>runlevel.h</itemPath>
@@ -29,9 +36,6 @@
         <itemPath>DevelOS.h</itemPath>
         <itemPath>configbits.h</itemPath>
         <itemPath>main.h</itemPath>
-        <itemPath>rtc.h</itemPath>
-        <itemPath>uart.h</itemPath>
-        <itemPath>console.h</itemPath>
       </logicalFolder>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
@@ -53,17 +57,22 @@
           <itemPath>FlashFS.c</itemPath>
           <itemPath>eeprom_i2c.c</itemPath>
         </logicalFolder>
+        <logicalFolder name="f5" displayName="I2C" projectFiles="true">
+          <itemPath>i2c_bitbang.c</itemPath>
+        </logicalFolder>
         <logicalFolder name="f3" displayName="Input" projectFiles="true">
           <itemPath>keypad.c</itemPath>
           <itemPath>ps2-keyboard.c</itemPath>
         </logicalFolder>
-        <itemPath>rtc.c</itemPath>
-        <itemPath>i2c_bitbang.c</itemPath>
+        <logicalFolder name="f4" displayName="System" projectFiles="true">
+          <itemPath>rtc.c</itemPath>
+          <itemPath>uart.c</itemPath>
+          <itemPath>console.c</itemPath>
+        </logicalFolder>
       </logicalFolder>
       <logicalFolder name="f2" displayName="System" projectFiles="true">
         <itemPath>runlevel.c</itemPath>
         <itemPath>DevelOS.c</itemPath>
-        <itemPath>uart.c</itemPath>
       </logicalFolder>
       <itemPath>newmain.c</itemPath>
     </logicalFolder>

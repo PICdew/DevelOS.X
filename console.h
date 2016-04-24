@@ -16,10 +16,19 @@ extern "C" {
 
 #pragma udata CON
 extern struct CONSOLE {
-    unsigned char command[CMD_Buffer];       // command buffer
-    // TODO: Console Buffer instead of double diplay buffer
+    unsigned char command[CMD_Buffer];          // command buffer
+    unsigned char Buffer[CON_lines][CON_width]; // TODO: Console Buffer instead of double diplay buffer
+    unsigned char cursor_x;                     //
+    unsigned char cursor_y;                     // Cursor Position
 } console;    
 #pragma udata
+    
+    void c_clr(void);                                           // Clear Screen
+    void c_pos(const unsigned char x, const unsigned char y);   // Set Cursor Pos
+    void c_view(const unsigned char x, const unsigned char y);  // Set Viewport
+    void c_print(const char* string[]);                         // print string to current cursor pos
+    void c_cr(void);                                            // do carriage return
+    void c_value(const unsigned int value);                     // convert integer to string and print to cursor. auto-omit zeroes
     
 /* Constant Strings in Program Memory */
 

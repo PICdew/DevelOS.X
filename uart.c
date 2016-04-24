@@ -61,7 +61,7 @@ char sendString(const char* string[], char len)
     else
     {
         // copy string to tx buffer
-        strcpy( &uart.tx_buff, string );
+        //strcpy( &uart.tx_buff, string );
         uart.busy = 1;
         uart.tx_bytes = len;
         addEvent(EV_uart_tx, 0);  

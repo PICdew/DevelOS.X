@@ -100,12 +100,8 @@ char InitFlash(void)
      \**************************************************************************/
         
         Flash.eprom.Blocks = Flash.Data[FFS_int_blocks];
-        d_cr();
-        d_print("EEPROM: \0");
-        d_value( Flash.eprom.UsedBlocks);
-        d_print("/\0");
-        d_value( Flash.eprom.Blocks );
-        d_print(" Used\n");
+        
+        return 0;
     }
 }
 
