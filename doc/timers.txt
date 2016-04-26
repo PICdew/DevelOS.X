@@ -1,0 +1,44 @@
+The DevelOS Software Timers
+
+1. Overview
+
+The PIC processors have some internal hardware timers, but only few. and some of them are even tied to other peripherals. 
+So i have implemented software timers to be able to have more timer-controlled tasks than actual timer modules. This is done by using timer0 and timer1 for DevelOS itself. timer0 runs as 8bit timer for high frequency tasks. it runs at aproximately 
+Fcycle / 256, so on a 46K20 at 64MHz it gets called about 62500 times per second. it can be used to create software 
+controlled pwm outputs on arbitrary pins, for example.
+timer1 runs as 16bit timer with 1:8 prescale and is preloaded every cycle. the purpose of this is to get it as close as 
+possible to 32 calls per second for finetuning the rtc. so you can get relatively accurate rtc counting without external
+resonator or tuning the osctune register.
+there are structs for the HF and LF timers. they are declared in DevelOS.h as follows:
+
+volatile struct Counter {
+    volatile unsigned int       Count;
+    volatile unsigned int       Wait;
+} isr_hf_count[ISR_HF_Count];
+
+struct LF_Counter {
+    unsigned int                count;
+    unsigned int                wait;
+} lf_count[LF_Count];
+
+The HF counters get incremented directly within the ISR, so be carefull when adding one of them.
+
+The LF counters are incremented inside OS_Event() and run asynchronously. they use little resources and should be preferred.
+
+
+
+2. Hooking into a DevelOS timer
+
+To hook some function to one of the timers, first make sure that there is a free timer for it. The number of timers 
+is configured in DevelOS.h with two #define statements.  one for the HF, one for the LF timers. It should be preferred to use the LF ones if possible, as they don't use as much resources. 
+by just increasing the value in the corresponding #define, a pair of variables will be created in the array for the timer. 
+
+All you have to do is set the wait value as needed by your application. for the LF counter, a wait value of 32 will be aproximately one second. so you could have your task be called 8 times per second by setting a wait value of 4, or have it be called every 4 seconds by setting the value to 128. since the variables are defined as unsigned it, the maximal value
+is 65535, wich would be 2047 seconds or 34 minutes.
+the HF counters run at aproximately 62 kHz and can be used for high frequency tasks. they can be used to create PWM outputs in the kHz range or drive other external circuitry.
+
+Keep in mind that the two timers work diffrently. The HF counters get incremented inside the ISR, and when a wait-value has been reached, an event is created by calling addEvent(EV_HF_Timer, i); where i is the number of the counter. you can hook your action inside the event handler OS_Event() inside the case EV_HF_Timer: section. this section already has its own switch() inside, so you can either put your function in the appropriate section, or send another event from there.
+
+The LF timer on the other hand gets incremented in the eventhandler, so the number of LF timers has no effect on the length
+of the interrupt service routine. inside OS_Event(), there is a case EV_LF_Timer:  switch(OS.Event[0].eventData) {...}
+with one sub-event defined to increment all LF counters. if one of them overflows, another event EV_LF_Timer is created with the timer number as data. predefined are cases for the rtc and display refresh. do not call delEvent(); from within your sub-event. it is called at the end of the switch() statement.

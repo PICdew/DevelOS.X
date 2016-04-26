@@ -1,0 +1,18 @@
+DevelOS Runlevels
+
+1. Overview
+
+While the Event handling and console functions run in the background, the runlevel is the foreground task. 
+Since the PIC architecture is based upon flash memory for the program, there is no easy way to load programs 
+or functions at runtime. Therefore, most PICs only serve a single purpose. The runlevels in DevelOS makes it 
+possible to have multiple functions in one PIC, and easily switch between then at runtime. 
+The first runlevel after power on is RL_Boot. it has several submodes to initialize peripherals and load data
+from the internal eeprom. after that, the OS switches to the runlevel defined as Startmode in DevelOS.h
+Right now this is just a Standby mode, doing nothing but writing the rtc string to the console.
+there are lots of possibilities for runlevels. for example, i had a system up that worked as universal power 
+supply for electronics development. it had a 1-Line VFL Display, wich displayed the current voltages one after 
+another. then, there were other runlevels for showing a single voltage, generating pwm signals or general setup 
+of the system. lots of the runlevel functions are still there, but unused.
+
+Basically, a runlevel is the best way to implement your own application on DevelOS. the hooks to the runlevels 
+are in newmain.c in the main loop. to keep this file small, it is best to declare your runlevel function in runlevel.c and calling the function from the runlevel switch() case.

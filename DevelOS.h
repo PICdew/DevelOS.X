@@ -143,6 +143,7 @@ extern struct LF_Counter {
 #define LFT_adc         2
 
 // Functions in DevelOS.c
+    
     // Initialisation
 void OS_HandleReset(void);
 void OS_InitGlobals(void);
@@ -154,17 +155,18 @@ unsigned char addEvent(const unsigned char type, const unsigned int data);
 void delEvent(void);
 void OS_Event(void);
 
-    // delays
+    // Delays
 void OS_delay_ns(unsigned int nanoseconds);
 void OS_delay_us(unsigned int microseconds);
 void OS_delay_ms(unsigned int milliseconds);
 void OS_delay_1S(void);
 
-    // timing control
+    // Timing Control
 unsigned long getCPUClock(void);
 void setTiming(void);
 
-    // others
+    // Other Functions
+unsigned long detectModules(void);
 void ConvertVoltages(void);
 void ScanADC(void);
 void OS_SetRunlevel(unsigned char runlevel);
