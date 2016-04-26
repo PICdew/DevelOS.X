@@ -46,6 +46,13 @@ extern "C" {
 #define RL_SetRL        0xF0    // Set new Runlevel
 #define RL_Boot         0xFE    // Should be set @ reset
 #define RL_Error        0xFF    // something went wrong
+    
+    // RL_Boot modes
+#define RL_Boot_Display 0x00
+#define RL_Boot_FlashFS 0x01
+#define RL_Boot_Load    0x02
+#define RL_Boot_Input   0x03
+#define RL_Boot_Done    0x06
 
 // runlevel Functions
 void ErrorLevel(void);

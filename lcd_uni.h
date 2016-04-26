@@ -31,27 +31,22 @@ extern "C" {
 #include "./DevelOS.h"
 
 #ifdef MOD_Display_LCD_Uni
-
     extern struct LCD_Display {
-        unsigned char Buffer[4][20];                                            /* a buffer for a 4x20 lcd
-                                                                                 * do not confuse this one with 
-                                                                                 * struct Disp {
-                                                                                 *      unsigned char Buffer[BufferLines][20];
-                                                                                 *              ...
-                                                                                 *  } Display;
-                                                                                 *  in "display.h".
-                                                                                 * this one is the hardware buffer. 
-                                                                                 * If neccessary, this is the place to translate 
-                                                                                 * characters from ascii to whatever the display speaks.
-                                                                                 * my current Display is a Electronic Assembly EAW204-NLED,
-                                                                                 * which happens to speak ascii.
-                                                                                 */
-                                                                                
-        unsigned char LineOffset[4];                                            // for each line, save the memory-offset
+        unsigned char Buffer[LCDuni_Lines][LCDuni_Cols];
+        /* a buffer for a 4x20 lcd
+         * do not confuse this one with 
+         * struct Disp { unsigned char Buffer[BufferLines][20]; ... } Display;
+         * in "display.h".
+         * this one is the hardware buffer. If neccessary, this is the place to translate 
+         * characters from ascii to whatever the display speaks. My current Display 
+         * is a Electronic Assembly EAW204-NLED, which happens to speak ascii.
+         */
+        unsigned char LineOffset[LCDuni_Lines];                                            // for each line, save the memory-offset
         struct {
             unsigned char width;
             unsigned char height;
         } Dimensions;
+        char viewy;
         char Busy;                                                              // set this while writing to the lcd, to block any writes to buffer
         char Light;                                                             // for led-backlight
     } LCD;              // a buffer for a 4x20 LCD
@@ -77,9 +72,9 @@ extern const rom unsigned char LCD_Command[8];                                  
     #define LCD_CMD_sca     6   // CMD 6    :   Set CG-RAM Address. OR in the address
     #define LCD_CMD_sda     7   // CMD 7    :   Set DD-RAM Address. OR in the address
     // defines for the LCD Timings
-    #define LCD_PON_1       40000000    // Power on Delay (40 ms)
-    #define LCD_PON_2       4100000     // Reset Delay (4.1 ms))
-    #define LCD_PON_3       100000      // Init Delay (100 µs)
+    #define LCD_PON_1       40000    // Power on Delay (40 ms)
+    #define LCD_PON_2       4100     // Reset Delay (4.1 ms))
+    #define LCD_PON_3       100      // Init Delay (100 µs)
     #define LCD_E_CYC       400         // Min LCD Enable Cycle Time /2 in ns
     #define LCD_T_AS        100         // Adress setup time
     #define LCD_T_DSW       100         // Data setup Time

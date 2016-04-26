@@ -19,29 +19,18 @@
 
 #ifdef MOD_Display_LCD_Uni
 
-char position;
+//char position;
 
 // <editor-fold defaultstate="collapsed" desc="char InitLCD(void)">
 char InitLCD(void)
 {
-    char i,cmd,byte;
-
-    for(i=0;i<20;i++)
+    char i,cmd,byte,x,y;
+    LCD.Busy=1;
+    
+    for(i=0;i<LCDuni_Lines;i++)
     {
-        LCD.Buffer[0][i]=0;
-        LCD.Buffer[1][i]=0;
-        LCD.Buffer[2][i]=0;
-        LCD.Buffer[3][i]=0;
-    }
-
-    LCD.Busy=0;
-    LCD.Dimensions.height=4;
-    LCD.Dimensions.width=20;
-    LCD.Light=1;
-    LCD.LineOffset[0]=0x00;
-    LCD.LineOffset[1]=0x40;
-    LCD.LineOffset[2]=0x14;
-    LCD.LineOffset[3]=0x54;
+        memset(LCD.Buffer[i], ' ', LCDuni_Cols );
+    }    
 
     // Set all Portpins to 0 except Backlight
     LCD_BL=1;
@@ -70,13 +59,14 @@ char InitLCD(void)
      * That way, many Controllers can be supported by 
      * one source file
      */
+    
     // Begin Init Sequence
     cmd = 0b00000011;           // Reset Command
-    OS_delay_ns(LCD_PON_1);     // Power on Delay (40 ms)
+    OS_delay_us(LCD_PON_1);     // Power on Delay (40 ms)
     writeNibbleToLCD(cmd);
-    OS_delay_ns(LCD_PON_2);     // Reset Delay (4.1 ms)
+    OS_delay_us(LCD_PON_2);     // Reset Delay (4.1 ms)
     writeNibbleToLCD(cmd);
-    OS_delay_ns(LCD_PON_3);     // Init Delay (100 µs)
+    OS_delay_us(LCD_PON_3);     // Init Delay (100 µs)
     writeNibbleToLCD(cmd);
     cmd =  0b00000010;          // Set Interface 4-bit
     writeNibbleToLCD(cmd);
@@ -106,6 +96,15 @@ char InitLCD(void)
     }
     else
     {
+        LCD.LineOffset[0]       = 0x00;
+        LCD.LineOffset[1]       = 0x40;
+        LCD.LineOffset[2]       = 0x14;
+        LCD.LineOffset[3]       = 0x54;
+        LCD.Dimensions.height   = LCDuni_Lines;
+        LCD.Dimensions.width    = LCDuni_Cols;
+        LCD.viewy               = 0;
+        LCD.Light               = 1;        
+        LCD.Busy                = 0;
         return 0;
     }
 }
@@ -116,6 +115,12 @@ void RefreshLCD(void)
 {
     unsigned char x,y,upperNibble,lowerNibble;
     
+    if(LCD.Busy == 1)
+    {
+        return;
+    }
+    
+    LCD.Busy = 1;
     for(y=0;y<LCD.Dimensions.height;y++)
     {
         unsigned char cmd = LCD_Command[LCD_CMD_sda] | LCD.LineOffset[y];
@@ -123,23 +128,23 @@ void RefreshLCD(void)
         LCD_WriteCMD(cmd);                  // Set DD-RAM adress
         for(x=0;x<LCD.Dimensions.width;x++)
         {
+            upperNibble = LCD.Buffer[y][x] >> 4;
+            lowerNibble = LCD.Buffer[y][x] & 0x0f;
             while(LCD_Busy());
             LCD_RS = 1;                     // Set control bits:
             LCD_RW = 0;                     // RS=1 & RW=0 --> Write to Ram
-            TRIS_D4=0;
-            TRIS_D5=0;
-            TRIS_D6=0;
-            TRIS_D7=0;
+            TRIS_D4= 0;
+            TRIS_D5= 0;
+            TRIS_D6= 0;
+            TRIS_D7= 0;
             OS_delay_ns(LCD_T_AS);          
-            upperNibble = LCD.Buffer[y][x] >> 4;
-            lowerNibble = LCD.Buffer[y][x] & 0x0f;
             writeNibbleToLCD(upperNibble);
             OS_delay_ns(LCD_E_CYC);
             writeNibbleToLCD(lowerNibble);
             OS_delay_ns(LCD_T_AH);
-            //LCD_WriteByte(LCD.Buffer[y][x], (LCD.LineOffset[y]+x) );
         }
     }
+    LCD.Busy = 0;
 }
 //</editor-fold>
 

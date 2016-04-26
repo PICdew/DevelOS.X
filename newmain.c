@@ -15,19 +15,20 @@
  */
 
 // <editor-fold defaultstate="collapsed" desc="Global Variable Definitions">
-//#pragma udata OS_Counters
-//volatile struct Counters T0counters;
 #pragma udata OS_Data
 struct OS_State OS;
 #pragma udata AD_Data
 volatile struct ADC_State ADC_Data;
 #pragma udata ISR_Count
-volatile struct Counter isr_lf_count[ISR_LF_Count], isr_hf_count[ISR_HF_Count];
+volatile struct Counter isr_hf_count[ISR_HF_Count];
+#pragma udata LF_COUNT
+struct LF_Counter lf_count[LF_Count];
 #pragma udata
+
 #if defined MOD_Display
-    #pragma udata TextBuffer
-    struct Disp Display;
-    #pragma udata HardBuffer
+//    #pragma udata TextBuffer
+//    struct Disp Display;
+//    #pragma udata HardBuffer
 
     #if defined MOD_Display_VFLD
         struct VF_Display VFLD;
@@ -57,6 +58,12 @@ volatile struct Counter isr_lf_count[ISR_LF_Count], isr_hf_count[ISR_HF_Count];
     #pragma udata
 #endif /* MOD_FlashFS */
 
+#ifdef MOD_I2C
+    #pragma udata I2C_Data
+    struct I2C_BUS i2c_bus;
+    #pragma udata
+#endif /* MOD_I2C */
+
 #if defined MOD_FlashFS_extI2C
     #pragma udata I2C_Data
     struct I2Ceeprom  i2c_chip;
@@ -73,31 +80,32 @@ volatile struct Counter isr_lf_count[ISR_LF_Count], isr_hf_count[ISR_HF_Count];
     volatile struct KB_PS2 Keyboard;
 #endif /* MOD_Input_KB_PS2 */
 
-#ifdef MOD_I2C
-    #pragma udata I2C_Data
-    struct I2C_BUS i2c_bus;
-    #pragma udata
-#endif /* MOD_I2C */
+#if defined MOD_UART
+#pragma udata UART                          // uart data
+volatile struct UART_DATA uart;
+#pragma udata
+#endif /* MOD_UART */
 
-#ifdef MOD_FlashFS_extI2C
-    #pragma udata i2c
-    struct I2Ceeprom I2C_eprom;
-    #pragma udata
-#endif
-
+#if defined MOD_Console
+#pragma udata CON
+struct CONSOLE console;
+#pragma udata
+#endif /* MOD_Console */
 // </editor-fold>
 
 /*
  * Here come the service routines for IRQs:
  */
 // <editor-fold defaultstate="collapsed" desc="Interrupt Service Routines">
+
+        // <editor-fold defaultstate="collapsed" desc="High Priority">
 #pragma code high_vector=0x08
 void high_vector (void)
 {
     _asm GOTO High_ISR _endasm
 }
 #pragma code
-#pragma interrupt High_ISR nosave=section("ISR_Count")
+#pragma interrupt High_ISR nosave=section("ISR_Count"), section("UART")
 void High_ISR(void)         
 {
     char i;
@@ -120,25 +128,20 @@ void High_ISR(void)
         INTCONbits.TMR0IE = 1;      //irq enable
     } // </editor-fold>
 
-    if(PIR1bits.TMR1IF)         // <editor-fold defaultstate="collapsed" desc="Timer 1 (LF Timer)">
+    else if(PIR1bits.TMR1IF)    // <editor-fold defaultstate="collapsed" desc="Timer 1 (LF Timer)">
     {
-        PIR1bits.TMR1IF=0;
-        for(i=0; i<ISR_LF_Count;i++)
-        {
-            if(isr_lf_count[i].Count++ > isr_lf_count[i].Wait)
-            {
-                if(OS.isInitialized==1)
-                {
-                    addEvent(EV_LF_Timer, i);
-                }
-                isr_lf_count[i].Count=0;
-            }
-        }
-
-        PIE1bits.TMR1IE = 1;    
+        PIR1bits.TMR1IF=0;          // clear interrupt flag
+        T1CONbits.TMR1ON=0;         // Stop Timer1
+        // send Event to OS
+        addEvent(EV_LF_Timer, EV_LFT_count);
+        // preload the timer
+        TMR1H = T1_preload_h;
+        TMR1L = T1_preload_l;
+        T1CONbits.TMR1ON=1;         // Start Timer1
+        PIE1bits.TMR1IE = 1;        // enable interrupt
     } // </editor-fold>
     
-    if(INTCONbits.INT0IF)       // <editor-fold defaultstate="collapsed" desc="Ext INT 0">
+    else if(INTCONbits.INT0IF)  // <editor-fold defaultstate="collapsed" desc="Ext INT 0">
     {
         INTCONbits.INT0IF=0;
         // Bit einlesen & zählen
@@ -172,22 +175,74 @@ void High_ISR(void)
 #endif
         INTCONbits.INT0IE=1;
     } // </editor-fold>
+    
+    else if(PIR1bits.RCIF)      // <editor-fold defaultstate="collapsed" desc="UART rx">
+    {
+                PIR1bits.RCIF=0;
 
-    INTCONbits.GIEH =1;
+        #ifdef MOD_UART
+
+        if(RCSTAbits.FERR)
+        {
+            addEvent(EV_uart_error, EV_E_uart_frame);
+            //tmp=RCREG;
+        }else if(RCSTAbits.OERR)
+        {
+            addEvent(EV_uart_error, EV_E_uart_of);
+            //tmp=RCREG;
+        }else{
+            //tmp=RCREG;
+            addEvent(EV_uart_rx, RCREG);
+            #ifdef UART_echo
+            //TXREG=tmp;
+            //TXSTAbits.TXEN=1;
+            #endif /* UART_echo */
+        }
+        #endif /* MOD_UART */        
+
+        //PIE1bits.RCIE=1;
+    } // </editor-fold>
+    
+    else if(PIR1bits.TXIF)      // <editor-fold defaultstate="collapsed" desc="UART tx">
+    {
+        PIR1bits.TXIF=0;
+#ifdef MOD_UART
+        if(uart.tx_bytes>0)
+        {
+           uart.tx_bytes--;
+           TXREG=uart.tx_buff[uart.tx_bytes];
+        }
+        else if(TXSTAbits.TRMT)
+        {
+                TXSTAbits.TXEN=0;
+                //PIE1bits.TXIE=0;
+                addEvent(EV_uart_tx, 0);
+        }
+//        else if(TXSTAbits.TRMT)
+//        {
+//            TXSTAbits.TXEN=0;
+//        }
+#endif /* MOD_UART */        
+    } // </editor-fold>
+    
+    //INTCONbits.GIEH =1;
 }
+// </editor-fold>
+
+        // <editor-fold defaultstate="collapsed" desc="Low Priority">
 #pragma code low_vector=0x18
 void low_vector (void)
 {
     _asm GOTO Low_ISR _endasm
 }
 #pragma code
-#pragma interruptlow Low_ISR 
+#pragma interruptlow Low_ISR nosave=section("UART")
 void Low_ISR(void)     
 {
     unsigned int temp;
     unsigned char tmp;
     
-    if(PIR1bits.ADIF)           // <editor-fold defaultstate="collapsed" desc="ADC Module">
+    if(PIR1bits.ADIF)       // <editor-fold defaultstate="collapsed" desc="ADC Module">
     {
         PIR1bits.ADIF=0;                        //  Clear IRQ
         
@@ -197,10 +252,11 @@ void Low_ISR(void)
         PIE1bits.ADIE=1;                        //  Enable IRQ
     } // </editor-fold>
     
-    INTCONbits.GIEL =1;
+    //INTCONbits.GIEL =1;
 }
 // </editor-fold>
 
+// </editor-fold>
 
 /*
  * Time to do something!
@@ -211,110 +267,169 @@ void Low_ISR(void)
 void main(void)
 {
     // temp variables for the main() loop must be defined here
-    unsigned char i=0;
-
+    unsigned char i =0;
+    signed char err =0;
+    
     // First of all, look if this was an reset, and why
-    HandleReset();
+    OS_HandleReset();
 
     // Then, initialize global variables
-    InitGlobals();
+    OS_InitGlobals();
     
     // Now, Init the Chip Hardware
-    InitChip();
+    OS_InitChip();
     
     // Init OS to sane values
     InitOS();
 
-    // Display Init
-    InitDisplay();
-    RefreshDisplay();
-    #ifdef BOOT_SLOW 
-    OS_delay_ns(10000000);
-    #endif
-    
-    d_cr();
-    d_print("DevelOS-16 v0.1\0");
-    RefreshDisplay();
-    #ifdef BOOT_SLOW
-    OS_delay_ns(5000000);
-    #endif
-    
-#ifdef MOD_FlashFS
-    // Init FlashFS
-    d_cr();
-    d_print("FlashFS\0");
-    RefreshDisplay();
-    #ifdef BOOT_SLOW
-    OS_delay_ns(5000000);
-    #endif
-    InitFlash();
-    RefreshDisplay();
-    #ifdef BOOT_SLOW
-    OS_delay_ns(5000000);
-    #endif /* BOOT_SLOW */
-    
-    // Load EEPROM Data
-    for(i=0;i<EE_Blocks;i++)
-    {
-        switch(Flash.eprom.Block[i].signature)
-        {
-            case EE_sig_FlashFS:
-                // TODO: use this block somehow
-                // it should store info on the other blocks,
-                // checksums, and info on external eeprom chips
-                d_cr();
-                d_print("FlashFS at \0");
-                d_value(i);
-                RefreshDisplay();        
-                #ifdef BOOT_SLOW
-                OS_delay_ns(5000000);
-                #endif /* BOOT_SLOW */
-                break;
-            case EE_sig_System:
-                // This holds all the static settings for the OS
-                d_cr();
-                d_print("DevelOS at \0");
-                d_value(i);
-                RefreshDisplay();     
-                #ifdef BOOT_SLOW
-                OS_delay_ns(5000000);
-                #endif /* BOOT_SLOW */
-                LoadEEPROM_OS(i);
-                break;
-            default:
-                break;
-        }
-    }
-#endif /* MOD_FlashFS */
-    
-    // Init Keyboard/Input
-#ifdef MOD_Input_KB_PS2
-    InitKB_PS2();
-#endif
-    
-    #ifdef BOOT_SLOW
-    OS_delay_ns(5000000);
-    #endif /* BOOT_SLOW */
-
-    d_clr();
     // do application specific inits here
     
     while(1)
     {
         // Do OS own stuff here
-        OS_Stuff();
+        OS_Event();
         
         // Now come the runlevels
         switch(OS.runlevel)
         {
-            case RL_Boot:           // <editor-fold defaultstate="collapsed" desc="RL_Boot">   
-                // After Booting the OS, switch to runlevel defined in DevelOS.h
-                OS_SetRunlevel(Startmode);
-                break;//</editor-fold>
-            case RL_Standby:        // <editor-fold defaultstate="collapsed" desc="RL_Stanby">
+            case RL_Boot:           
+                // <editor-fold defaultstate="collapsed" desc="RL_Boot">  
+                switch(OS.runmode)
+                {
+                    case RL_Boot_Display:       
+                        // <editor-fold defaultstate="collapsed" desc="RL_Boot_Display"> 
+                        c_print("DevelOS: 8bit v0.1\0");
+                        c_cr();
+                        //Display Init
+                        c_print("Display: \0");
+                        InitDisplay();
+                        c_cr();
+                        addEvent(EV_Display, 0);
+                        OS.runmode++;
+                        //</editor-fold>
+                        break;
+                    case RL_Boot_FlashFS:       
+                        // <editor-fold defaultstate="collapsed" desc="RL_Boot_FlashFS">
+                        // Init FlashFS
+                        #ifdef MOD_FlashFS
+                            #ifdef BOOT_SLOW 
+                            OS_delay_1S();
+                            #endif
+                            c_print("FlashFS: \0");
+                            err = InitFlash();
+                            if(err != 0)
+                            {
+                                // no luck, handle error
+                                if(err==-1)
+                                {
+                                    // no FlashFS Data Block found
+                                    c_print("formating\0");
+                                    c_cr();
+                                    EE_format();
+                                }
+                                else if(err==-2)
+                                {
+                                    // FlashFS Data Block invalid
+                                    c_print("corrupted\0");
+                                    c_cr();
+                                    EE_format();
+                                }
+                            }
+                            else
+                            {
+                                c_pos(0, console.cursor_y);
+                                c_print("EEPROM : \0");
+                                //sprintf( console.Buffer[console.cursor_y][console.cursor_x], "%d", Flash.eprom.UsedBlocks);
+                                c_value( Flash.eprom.UsedBlocks );
+                                c_print("/\0");
+                                c_value( Flash.eprom.Blocks );
+                                c_print(" Used\0");
+                                c_cr();
+                                addEvent(EV_Display, 0);
+                                OS.runmode++;
+                            }
+                            //addEvent(EV_Display, 0);
+                        #else /* MOD_FlashFS */
+                        OS.runmode++;
+                        #endif /* MOD_FlashFS */
+                        //</editor-fold>
+                        break;
+                    case RL_Boot_Load:          
+                        // <editor-fold defaultstate="collapsed" desc="RL_Boot_Load">
+                        // Load EEPROM Data  
+                        for(i=0;i<EE_Blocks;i++)
+                        {
+                            switch(Flash.eprom.Block[i].signature)
+                            {
+                                case EE_sig_FlashFS:
+                                    #ifdef BOOT_SLOW
+                                    OS_delay_1S();
+                                    #endif /* BOOT_SLOW */
+                                    c_print("FlashFS at \0");
+                                    c_value(i);
+                                    c_cr();                                    
+                                    break;
+                                case EE_sig_System:
+                                    // This holds all the static settings for the OS
+                                    #ifdef BOOT_SLOW
+                                    OS_delay_1S();
+                                    #endif /* BOOT_SLOW */
+                                    c_print("DevelOS at \0");
+                                    c_value(i);
+                                    c_cr();
+                                    //LoadEEPROM_OS(i);
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                        addEvent(EV_Display, 0);
+                        OS.runmode++;
+                        //</editor-fold>
+                        break;
+                    case RL_Boot_Input:
+                        // <editor-fold defaultstate="collapsed" desc="RL_Boot_Input">
+                        // Init Keyboard/Input
+                        #ifdef MOD_Input_KB_PS2
+                        #ifdef BOOT_SLOW
+                        OS_delay_ns(10000000);
+                        #endif /* BOOT_SLOW */
+                            InitKB_PS2();
+                        #endif
+                            //addEvent(EV_Display, 0);
+                        OS.runmode++;
+                        // </editor-fold>
+                        break;
+                    default:
+                        // <editor-fold defaultstate="collapsed" desc="default">
+                        if(OS.runmode >= RL_Boot_Done)
+                        {
+                            // After Booting the OS, switch to runlevel defined in DevelOS.h
+                            #ifdef BOOT_SLOW
+                            OS_delay_1S();
+                            #endif /* BOOT_SLOW */
+                            OS_SetRunlevel(Startmode);
+                            //d_clr();
+                            addEvent(EV_Display, 0);
+                        }
+                        else
+                        {
+                            OS.runmode++;
+                        }
+                        // </editor-fold>
+                        break;
+                }
+                //</editor-fold>
+                break;
+            case RL_Standby:        
+                // <editor-fold defaultstate="collapsed" desc="RL_Stanby">
                 DoStandby();
-                break;//</editor-fold>
+                //</editor-fold>
+                break;
             default:
+                // <editor-fold defaultstate="collapsed" desc="Runlevel invalid">
+                addEvent(EV_Error, EV_E_RLinv);     // invalid runlevel
+                // </editor-fold>
                 break;
         }
     }

@@ -17,7 +17,7 @@ extern "C" {
 
     #define EE_Blocksize        64
     #define EE_Blocks           4       // 256 Byte, these exist on all PICs
-    #define EE_bytes_System     21      // 21 bytes used for now, 15 system, 6 rtc TODO: assign dynamically
+    //#define EE_bytes_System     21      // 21 bytes used for now, 15 system, 6 rtc TODO: assign dynamically
 
     // Block signatures
     #define EE_sig_FlashFS      0x01
@@ -43,7 +43,7 @@ extern struct Flash_Data {
                                         // Block 2+3 : Buffer for paging
     } Flash; // </editor-fold>
     
-    void InitFlash(void);
+    char InitFlash(void);
 
 //    <editor-fold defaultstate="collapsed" desc="#defines for easy access to Data Block">
         // Byte 0   : 8bit  : How many Blocks does this device have internal?

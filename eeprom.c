@@ -11,10 +11,6 @@ void EE_format(void)
     
     // First, Overwrite all with Free sig
 
-
-    d_cr();
-    d_print("Formating ...\0");
-    RefreshDisplay(); 
     for(i=0;i<EE_Blocksize;i++)
     {
         temp[i]=EE_sig_Free;
@@ -134,50 +130,46 @@ unsigned char EE_write_block(unsigned int eeprom_start_address, unsigned char *r
     EECON1bits.CFGS = 0;							//Access eeprom registers, not configuration registers
     EECON1bits.WREN = 1;							//Enable eeprom writes
 
-
+    // save interrupt state
+    if(INTCONbits.GIEH)
+    {
+        flag=2;
+    }
+    if(INTCONbits.GIEL)
+    {
+        flag++;
+    }
+    
+    //disable interrupt
+    INTCONbits.GIEL=0;
+    INTCONbits.GIEH=0;
+    PIR2bits.EEIF = 0;      //Clear write complete flag
+    
     //Write the data to eeprom
     for (count = 0; count < len; count++)
     {
         EEDATA = *ram_start_address++;
-
-        PIR2bits.EEIF = 0;							//Clear write complete flag
-
-        if(INTCONbits.GIEH)
-        {
-            flag=2;
-        }
-        if(INTCONbits.GIEL)
-        {
-            flag++;
-        }
-        INTCONbits.GIEL=0;
-        INTCONbits.GIEH=0;
-
-        EECON2 = 0x55;								//Do the write enable sequence
+        EECON2 = 0x55;			//Do the write enable sequence
         EECON2 = 0xaa;
-        EECON1bits.WR = 1;							//Start write
-
-        
-        
-        if(flag>=2)
-        {
-            INTCONbits.GIEH=1;
-            flag -=2;
-        }
-        if(flag>0)
-        {
-            INTCONbits.GIEL=1;
-        }
-        flag=0;
-
-        while (PIR2bits.EEIF == 0);					//Wait for write to complete (do it above as faster)    
-
-        EEADR++;									//Increment address
+        EECON1bits.WR = 1;		//Start write
+        while( EECON1bits.WR ); //Wait for write to complete
+        PIR2bits.EEIF = 0;      //Clear write complete flag
+        EEADR++;				//Increment address
 
 #ifdef EE_1k
         if (EEADR == 0)
         EEADRH++;
 #endif
+    }
+    //restore injterrupt states
+    if(flag>=2)
+    {
+        INTCONbits.GIEH=1;
+        flag -=2;
+    }
+    if(flag>0)
+    {
+        INTCONbits.GIEL=1;
     }
     return 1;
 }// </editor-fold>
@@ -254,18 +246,18 @@ void InitEEPROM(void)
 
     //Flash.eprom.FreeBlocks=0;
 
-    d_print("LESE EPROM\n");
+    //d_print("LESE EPROM\n");
     //VFLD.Symbol[VFLD_CN2]=1;
-    RefreshDisplay();
+    //RefreshDisplay();
 
     for(i=0;i<EE_Blocks;i++)
     {
         Flash.eprom.Block[i].adress=i*EE_Blocksize;
         Flash.eprom.Block[i].signature=EE_read_byte(Flash.eprom.Block[i].adress + (EE_Blocksize-1) ) ;
-        if(Flash.eprom.Block[i].signature==0xAA | Flash.eprom.Block[i].signature == 0xFF)
-        {
-            //Flash.eprom.FreeBlocks++;
-        }
+//        if(Flash.eprom.Block[i].signature==0xAA | Flash.eprom.Block[i].signature == 0xFF)
+//        {
+//            //Flash.eprom.FreeBlocks++;
+//        }
         //Flash.eprom.Block[i].used=EE_read_byte(Flash.eprom.Block[i].adress + (EE_Blocksize-2) ) ;
     }
 }// </editor-fold>
@@ -273,9 +265,21 @@ void InitEEPROM(void)
 // <editor-fold defaultstate="collapsed" desc="unsigned char LoadEEPROM_OS(unsigned char block)">
 unsigned char LoadEEPROM_OS(unsigned char block)   // Read System Data from EEPROM
 {
-    unsigned char temp[EE_bytes_System];
+    unsigned char temp[EE_Blocksize];
+    unsigned int crc, crc_l;
 
-    EE_read_block(Flash.eprom.Block[block].adress, &temp[0], EE_bytes_System);
+    EE_read_block(Flash.eprom.Block[block].adress, &temp[0], EE_Blocksize);
+    crc         = crc16(&temp, EE_Blocksize-4);
+    crc_l       = 0;
+    crc_l      |= ((unsigned char) temp[61]) << 8;
+    crc_l      |= ((unsigned char) temp[62]);
+    if(crc != crc_l)
+    {
+        // block invalid
+        return -1;
+    }
+    else
+    {
         OS.prev_runlevel    = temp[0];
         OS.runlevel         = temp[1];
         OS.runmode          = temp[2];
@@ -300,12 +304,15 @@ unsigned char LoadEEPROM_OS(unsigned char block)   // Read System Data from EEPR
         rtc.year            = temp[20];
 #endif
         return 1;   // block loaded
+    }
 }// </editor-fold>
 
 // <editor-fold defaultstate="collapsed" desc="unsigned char SaveEEPROM_OS(unsigned char block)">
 unsigned char SaveEEPROM_OS(unsigned char block)   // Write System Data to EEPROM
 {
-    unsigned char temp[EE_bytes_System];
+    unsigned char temp[EE_Blocksize];
+    unsigned int crc;
+    memset(temp, 0, EE_Blocksize );
 
     temp[0]     = OS.prev_runlevel;
     temp[1]     = OS.runlevel;
@@ -337,11 +344,11 @@ unsigned char SaveEEPROM_OS(unsigned char block)   // Write System Data to EEPRO
     temp[19]    = 0;
     temp[20]    = 0;
 #endif
-    EE_write_block(Flash.eprom.Block[block].adress, &temp[0], EE_bytes_System);
+    crc         = crc16(&temp, EE_Blocksize-4);
+    temp[61]    = (unsigned char)( (crc >> 8) & 0xFF);
+    temp[62]    = (unsigned char)( crc & 0xFF);
+    temp[63]    = EE_sig_System;
 
-    temp[0]     = EE_bytes_System;
-    temp[1]     = EE_sig_System;
-    
-    EE_write_block(Flash.eprom.Block[block].adress + (EE_Blocksize-2), &temp[0], 2);
+    EE_write_block(Flash.eprom.Block[block].adress, &temp[0], EE_Blocksize);    
 }// </editor-fold>
 #endif    /* MOD_FlashFS */

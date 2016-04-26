@@ -3,7 +3,7 @@
 
 #ifdef MOD_FlashFS
 
-void InitFlash(void)
+char InitFlash(void)
 {
     char i;
     unsigned int crc, crc_r;
@@ -26,12 +26,13 @@ void InitFlash(void)
     
     if(Flash.eprom.Block[0].signature != EE_sig_FlashFS)
     {
-        EE_format();
-        InitFlash();
+        // no FlashFS Data Block found
+        return -1;
+        //EE_format();
+        //InitFlash();
     }
     else
     {
-        // TODO: read FS-Block
         // read first Block
         EE_read_block(Flash.eprom.Block[0].adress, &Flash.Data, EE_Blocksize);
         
@@ -75,34 +76,32 @@ void InitFlash(void)
         }
         else
         {
-            // Block invalid, reformat
-            EE_format();
-            InitFlash();            
+            // FlashFS Data Block invalid
+            return -2;
+            //EE_format();
+            //InitFlash();            
         }
         
-        /* Block 0
-     * Device Data
-     * Byte 0   : 32bit : Delay Value of this Device
-     *                      tells us how fast the device can go
-     * Byte 4   : 32bit : number of 64 byte blocks on the device
-     *                      up to 255 Gigabytes per Device (whoa!)
-     * Byte 8   : 32bit : number of used Blocks 
-     * Byte 12  : 32bit : start of CRC-Block
-     *                      if zero   : none
-     *                      else      : store 16 bit Checksum for each Block on the device
-     *                                  takes one CRC-Block for 32 Data Blocks
-     * Byte 16  : 16bit : Maximum transfer size for multibyte write
-     * Byte 18  :
-     * Byte 61  : 16bit : CRC for Block 0
-     * Byte 63  : 8bit  : FlashFS Signature Byte
-     */ 
+     /*********************** DDB (Device Data Block) Structure ****************\
+     * Device Data                                                              *
+     * Byte 0   : 32bit : Delay Value of this Device                            *
+     *                      tells us how fast the device can go                 *
+     * Byte 4   : 32bit : number of 64 byte blocks on the device                *
+     *                      up to 255 Gigabytes per Device (whoa!)              *
+     * Byte 8   : 32bit : number of used Blocks                                 *
+     * Byte 12  : 32bit : start of CRC-Block                                    *
+     *                      if zero   : none                                    *
+     *                      else      : store 16 bit Checksum for each Block    *
+     *                                  takes one CRC-Block for 32 Data Blocks  *
+     * Byte 16  : 16bit : Maximum transfer size for multibyte write             *
+     * Byte 18  :                                                               *
+     * Byte 61  : 16bit : CRC for Block 0                                       *
+     * Byte 63  : 8bit  : FlashFS Signature Byte                                *
+     \**************************************************************************/
+        
         Flash.eprom.Blocks = Flash.Data[FFS_int_blocks];
-        d_cr();
-        d_print("EEPROM: \0");
-        d_value( Flash.eprom.UsedBlocks);
-        d_print("/\0");
-        d_value( Flash.eprom.Blocks );
-        d_print(" Used\n");
+        
+        return 0;
     }
 }
 

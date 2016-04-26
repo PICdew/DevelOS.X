@@ -26,6 +26,7 @@ extern struct RTC_Time
 #define IS_LEAP(year) (year%4 == 0)
 
 void IncrementRTC(void);
+// TODO: write function to generate string from rtc value
 
 #ifdef	__cplusplus
 }

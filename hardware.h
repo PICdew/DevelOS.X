@@ -12,32 +12,39 @@
 extern "C" {
 #endif
 
-
-
-#define Fosc    64000000
- /* Step 1:
+#define Fosc    64000000        // if using external resonator, we need this
+    
+/* Step 1:
  * Comment/UnComment modules as needed by application
  */
 
-#define MOD_rtc
-#define MOD_ADC
-//#define MOD_I2C
-//#define MOD_Input_KB_PS2
-//#define MOD_Input_keypad
-//#define MOD_Input_mousewheel
-//#define MOD_SoftPWM
-//#define MOD_HardPWM
-
-#define MOD_FlashFS
-//#define MOD_FlashFS_extSPI        // TODO: Driver for external SPI Flash
-//#define MOD_FlashFS_extI2C          // TODO: Driver for external I2C EEPROM
+    // Core Modules. These should not be disabled
+#define MOD_rtc                     // real time clock. needed for system timing
+#define MOD_ADC                     // ad converters. needed to track physical environment
+#define MOD_FlashFS                 // needed for access to internal eeprom
+#define MOD_Console                 // TODO: abstraction layer for UART,Display and Input Modules
+//#define MOD_UART                    // TODO: serial console
     
-#define MOD_Display                     
-    //#define MOD_Display_VFLD      // For PT6311 (or compatible) Serial Display Controller
-    #define MOD_Display_LCD_Uni     // For KS0073/HD44780 or compatible LCD, with arbitrary Pinout
-    //#define MOD_Display_LCD       // For KS0073 (or compatible) 4/8bit Display Controller, all Pins on one Port
+    // Additional Modules
+//#define MOD_I2C                   // I2C Driver, not using MSSP module
+//#define MOD_FlashFS_extSPI        // TODO: Driver for external SPI Flash
+//#define MOD_FlashFS_extI2C        // Driver for I2C eeprom devices. unfinished
+//#define MOD_SoftPWM               // TODO: PWM Output on any Pin, controlled by software timers.
+//#define MOD_HardPWM               // TODO: PWM Output using the PIC hardware CCPWM module
+
+    // Input Modules
+//#define MOD_Input_KB_PS2          // unfinished but somehow working
+//#define MOD_Input_keypad          // untested for long time, maybe incompatible with newer interface
+//#define MOD_Input_mousewheel      // unfinished
+
+    // Output Modules
+#define MOD_Display                 // Abstraction Layer to unify access to display hardware
+//#define MOD_Display_VFLD          // For PT6311 (or compatible) Serial Display Controller
+#define MOD_Display_LCD_Uni         // For KS0073/HD44780 or compatible LCD, with arbitrary Pinout
+//#define MOD_Display_LCD           // For KS0073 (or compatible) 4/8bit Display Controller, all Pins on one Port. more efficient, but restricted pinout
                                     // TODO: Make LCD_Uni compatible with LCD
 
+    
 /* Step 2:
  * define the Port-Pins you wish to use.
  */
@@ -46,13 +53,40 @@ extern "C" {
 /*      These Modules do not need any further configuration, they are ready to use
  */
 #ifdef MOD_rtc
+    #define T1_preload_h    0b00010111
+    #define T1_preload_l    90
+    // preloads calculation:
+    // ( 65536 - (2 register write) ) - ( (16M Fcyc) / 256 Prescale )= 3034
+    // the 46k20 only has 1:8 prescaler for TMR1, so we need 1:32 software postscaler
+    // TODO: check and recalculate these, they are taken from another project
     #include "./rtc.h"
 #endif
 
 #ifdef MOD_FlashFS
+    // TODO: if no internal eeprom is present, emulate it in program flash
     #include "./FlashFS.h"
     #include "./eeprom.h"
 #endif/* MOD_FlashFS */
+
+#ifdef MOD_Console
+    #define CON_width       22
+    #define CON_lines       8
+    #define CON_command     CON_lines-1     // use the last line of the buffer as command line
+    #include "console.h"
+#endif /* MOD_Console */
+// </editor-fold>
+    
+// <editor-fold defaultstate="collapsed" desc="MOD_UART">
+#ifdef MOD_UART
+    #define RX_BUFF_SIZE    32              // also determines max command line
+    #define TX_BUFF_SIZE    32              // save memory
+    #include "./uart.h"
+    #define BAUD_H          BAUD_H__300
+    #define BAUD_L          BAUD_L__300
+    #define TX_t            TRISCbits.TRISC6
+    #define RX_t            TRISCbits.TRISC7
+    #define UART_echo
+#endif /* MOD_UART */
 // </editor-fold>
 
 // <editor-fold defaultstate="collapsed" desc="MOD_SoftPWM">
@@ -142,7 +176,9 @@ extern "C" {
 #elif defined MOD_Display_LCD_Uni
     // HD44780 compatible LCD
     // 4-bit Mode, arbitrary Pinout
-    // this will be hardcoded to 4x20 Display for now
+    // this will be only tested for 4x20 Display for now
+    #define LCDuni_Lines    4
+    #define LCDuni_Cols     20
     #include "./lcd_uni.h"
     
     #define TRIS_EN         TRISDbits.TRISD5

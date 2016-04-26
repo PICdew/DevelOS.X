@@ -8,131 +8,23 @@
  */
 #include "./DevelOS.h"
 
-// <editor-fold defaultstate="collapsed" desc="void OS_SetRunlevel(unsigned char runlevel)">
-void OS_SetRunlevel(unsigned char runlevel)
-{
-    switch(OS.runlevel)                                                         // Do Exit stuff (cleanup, carry, ...)
-    {
-        case RL_ROM_Stat:
-            OS.runmode=60;
-            OS.submode=0;
-            break;
-        case RL_TestKeypad:
-            OS.runmode=20;
-            runlevel=RL_Setup;
-            break;
-        default:
-            OS.runmode=0;
-            OS.submode=0;
-            break;
-    }
+// <editor-fold defaultstate="collapsed" desc="void OS_HandleReset(void)">
+/****************************************************************\
+ *                  DevelOS Reset Handler                       *
+ *                                                              *
+ * Read the relevant registers to find out what happened        *
+ * We need a Reset-Token to see if we are debugging             *
+ * There is a counter for each reset, so we can check what      *
+ * goes wrong                                                   *
+ * Ideally, this function should return some kind of error code *
+ * that can be passed to InitOS(), where all other inits should *
+ * take place                                                   *
+ *                                                              *
+ * TODO: act on the reset                                       *
+ *       watchdog-reset should disable dangerous functions      *
+\***************************************************************/
 
-    OS.prev_runlevel=OS.runlevel;
-    OS.runlevel=runlevel;
-
-    switch(OS.runlevel)                                                         // Do Entry stuff (init, SFR's, ...)
-    {
-        default:
-            d_clr();
-            break;
-    }
-}// </editor-fold>
-
-// <editor-fold defaultstate="collapsed" desc="void OS_delay_ns(unsigned long nanoseconds)">
-void OS_delay_ns(unsigned long nanoseconds)
-{
-    unsigned long temp,loop;
-    loop = 2 * OS.Tinst;    // 2* Tinst per loop, check, substract
-    temp = nanoseconds ;
-  //  temp -= (3*loop);
-    
-    while(temp>loop)
-    {
-        temp -= loop;
-    }
-}// </editor-fold>
-
-// <editor-fold defaultstate="collapsed" desc="void ConvertVoltages(void)">
-void ConvertVoltages(void)  // Convert ADC-Values to actual Voltage Levels
-{
-    unsigned long temp,tmp1,tmp2,tmp3;
-
-    tmp1=ADC_Data.refvalue;
-    tmp2=ADC_Data.vref;
-    tmp3=tmp1/tmp2;
-    tmp1=ADC_Data.channel[0];
-    tmp2=ADC_Data.channel[1];
-
-    temp=tmp3 * 1024;                 // Calculate 3,3V
-    OS.U3V3 = temp/1000;                                    // in mV
-
-    temp= 2.01 * tmp3 * tmp1;      // Calculate 5,0V
-    OS.U5V0=temp/1000;                                     // in mV
-
-    temp= 5.89 * tmp3 * tmp2 ;       // Calculate 12,0V
-    OS.U12V=temp/1000;                                      // in mV
-
-    temp=0;
-//    T0counters.RTCWait = (OS.CPUClock /4) /64;
-}// </editor-fold>
-
-// <editor-fold defaultstate="collapsed" desc="unsigned int getCPUClock(void)">
-unsigned long getCPUClock(void)
-{
-    unsigned long temp=0;
-
-#if defined(__18F46K20)
-    // <editor-fold defaultstate="collapsed" desc="processor specific">
-    switch(OSCCONbits.IRCF)
-    {
-        case 0:
-            temp = 31;
-            break;
-        case 1:
-            temp=250;
-            break;
-        case 2:
-            temp=500;
-            break;
-        case 3:
-            temp=1000;
-            break;
-        case 4:
-            temp=2000;
-            break;
-        case 5:
-            temp=4000;
-            break;
-        case 6:
-            temp=8000;
-            break;
-        case 7:
-            temp=16000;
-            break;
-    }
-    if(OSCTUNEbits.PLLEN==1)
-    {
-        temp=temp*4;
-    }// </editor-fold>
-#endif
-
-    return temp;
-}// </editor-fold>
-
-// <editor-fold defaultstate="collapsed" desc="void Wait1S(void)">
-void Wait1S(void)           // Do Nothing
-{
-   Delay10KTCYx(250);
-   Delay10KTCYx(250);
-   Delay10KTCYx(250);
-   Delay10KTCYx(250);
-   Delay10KTCYx(250);
-   Delay10KTCYx(250);
-
-}// </editor-fold>
-
-// <editor-fold defaultstate="collapsed" desc="void HandleReset(void)">
-void HandleReset(void)
+void OS_HandleReset(void)
 {
     if(OS.Rdetect != ResetToken)  // Assume Power on Reset
     {
@@ -179,241 +71,16 @@ void HandleReset(void)
     //InitGlobals();
 }// </editor-fold>
 
-// <editor-fold defaultstate="collapsed" desc="unsigned char addEvent(const unsigned char type, const unsigned int data)">
-unsigned char addEvent(const unsigned char type, const unsigned int data)
+// <editor-fold defaultstate="collapsed" desc="void OS_InitGlobals(void)">
+/****************************************************\
+ *            Initialize Global Variables           *
+ *                                                  *
+ * just some save values should be set here         *
+ * meaningful values will be set later              *
+\****************************************************/
+void OS_InitGlobals(void)      // Initialize Global Variables
 {
-    if(OS.numEvents >= EventBuffer )
-    {
-        return 0;       // Buffer Full
-    }
-    OS.Event[OS.numEvents].eventType=type;
-    OS.Event[OS.numEvents].eventData=data;
-    OS.numEvents++;
-    return 1;
-}// </editor-fold>
-
-// <editor-fold defaultstate="collapsed" desc="void delEvent(void)">
-void delEvent(void)
-{
-    // just rotate the buffer by one, then set the last one zero
-    char i;
-
-    for(i=0;i<EventBuffer-1;i++)
-    {
-        OS.Event[i].eventType=OS.Event[i+1].eventType;
-        OS.Event[i].eventData=OS.Event[i+1].eventData;
-    }
-    OS.Event[EventBuffer-1].eventType=EV_Null;
-    OS.Event[EventBuffer-1].eventData=0;
-    if(OS.numEvents>0)
-        OS.numEvents--;
-}// </editor-fold>
-
-// <editor-fold defaultstate="collapsed" desc="void InitOS(void)">
-void InitOS(void)
-{
-    char i;
-
-    OS.isInitialized=0;
-
-    OS.prev_runlevel=RL_Boot;
-    OS.runlevel=RL_Boot;
-    OS.runmode=0x00;
-    OS.CPUClock=getCPUClock();
-    OS.Tinst = (1000000 / OS.CPUClock) * 4; // in ns
-    
-    for(i=0;i<EventBuffer;i++)
-    {
-        OS.Event[i].eventData=0;
-        OS.Event[i].eventType=EV_Null;
-    }
-    OS.numEvents=0;
-
-    OS.Temp=0;
-    OS.U12V=0;
-    OS.U3V3=0;
-    OS.U5V0=0;
-
-    OS.Rdetect=ResetToken;
-    OS.Rcount=0;
-    OS.RcountBOR=0;
-    OS.RcountPOR=0;
-    OS.RcountRI=0;
-    OS.RcountWDT=0;
-    OS.RcountSO=0;
-    OS.RcountSU=0;
-    OS.FPS=0;
-    OS.Framecounter=0;
-    OS.Loopcount=0;
-    OS.LPS=0;
-
-    OS.DisplayBrightness=DefaultBrightness;
-    OS.DisplayInitialized=0;
-    OS.DisplayType=0;
-
-    OS.F_Display=2;
-    //OS.F_ADC=1;
-
-    isr_hf_count[EV_HFT_rtc].Wait = ( 1000 * OS.CPUClock / 16 ) / 2048;
-    isr_hf_count[EV_HFT_display].Wait = isr_hf_count[EV_HFT_rtc].Wait / OS.F_Display;
-
-    OS.isInitialized=1;
-
-    // Now start the Timers
-    T0CONbits.TMR0ON=1;     // Start Timer0
-    T1CONbits.TMR1ON=1;     // Start Timer1
-}// </editor-fold>
-
-// <editor-fold defaultstate="collapsed" desc="void OS_Stuff(void)">
-void OS_Stuff(void)
-{
-    char temp;
-    OS.Loopcount++;
-
-    switch(OS.Event[0].eventType)
-    {
-        case EV_Null:       // <editor-fold defaultstate="collapsed" desc="EV_Null">
-            OS.IdleCount++;
-            delEvent();
-            break;//</editor-fold>
-            
-        case EV_rtc:        // <editor-fold defaultstate="collapsed" desc="EV_rtc">
-            IncrementRTC();
-            OS.FPS=OS.Framecounter;
-            OS.LPS=OS.Loopcount;
-            OS.CPUIdlePercent=  ( (float)( (float)OS.IdleCount / (float)OS.Loopcount ) * (float)100 );
-            OS.Framecounter=0;
-            OS.Loopcount=0;
-            OS.IdleCount=0;
-            delEvent();
-            break;//</editor-fold>
-            
-        case EV_KeyMake:    // <editor-fold defaultstate="collapsed" desc="EV_KeyMake">
-            temp=OS.Event[0].eventData;
-            if( temp == 0x13)                   // Enter Key
-            {
-                // process command here
-                d_cr();
-            }
-            else if( temp == 0x27)              // ESC Key
-            {
-                d_clr();
-            }
-            else if(isprint(temp))              // printable (ASCII) char
-            {
-                if(Display.cursor_x>19)         // watch for end of line
-                {
-                    d_cr();
-                }
-                Display.Buffer[Display.cursor_y][Display.cursor_x++]=temp;
-            }
-            delEvent();
-            break;//</editor-fold>
-            
-        case EV_LF_Timer:   // <editor-fold defaultstate="collapsed" desc="EV_LF_Timer">
-            switch(OS.Event[0].eventData)
-            {
-                default:
-                    delEvent();
-                    break;
-            }
-            break;//</editor-fold>
-            
-        case EV_HF_Timer:   // <editor-fold defaultstate="collapsed" desc="EV_HF_Timer">
-            switch(OS.Event[0].eventData)
-            {
-                case EV_HFT_rtc:     // rtc
-                    delEvent();
-                    addEvent( EV_rtc, 0);
-                    break;
-                case EV_HFT_display:         // display
-                    delEvent();
-                    addEvent( EV_Display, 0);
-                    break;
-                case 2:     // HF-Timer 2
-                    break;
-                case 3:     // HF-Timer 3
-                    break;
-                default:    // HF-Timer ?
-                    delEvent();
-                    break;
-            }
-            
-            break;//</editor-fold>
-            
-        case EV_ScanMake:   // <editor-fold defaultstate="collapsed" desc="EV_ScanMake">
-#ifdef MOD_Input_KB_PS2
-            if( (OS.Event[0].eventData == 0x12) | (OS.Event[0].eventData == 0x59) )
-            {
-                Keyboard.Shift=1;
-            }
-            else if( (OS.Event[0].eventData == 0x14) )
-            {
-                Keyboard.Strg=1;
-            }
-            else
-            {
-                addEvent( EV_KeyMake, getKeyCode( OS.Event[0].eventData ));
-            }
-#endif
-            delEvent();
-            break;//</editor-fold>
-            
-        case EV_ScanBreak:  // <editor-fold defaultstate="collapsed" desc="EV_ScanBreak">
-#ifdef MOD_Input_KB_PS2
-            if( (OS.Event[0].eventData == 0x12) | (OS.Event[0].eventData == 0x59) )
-            {
-                Keyboard.Shift=0;
-            }
-            else if( (OS.Event[0].eventData == 0x14) )
-            {
-                Keyboard.Strg=0;
-            }
-            else
-            {
-                addEvent( EV_KeyBreak, getKeyCode( OS.Event[0].eventData ));
-            }
-#endif
-            delEvent();
-            break;//</editor-fold>
-            
-        case EV_Display:    // <editor-fold defaultstate="collapsed" desc="EV_Display">
-            if(OS.DisplayInitialized==1)
-            {
-                OS.Framecounter++;
-                RefreshDisplay();
-            }                                    
-            delEvent();
-            break;//</editor-fold>
-            
-        case EV_Error:      // <editor-fold defaultstate="collapsed" desc="EV_Error">
-            // do something about it
-            while(OS.Event[0].eventType == EV_Error)
-            {
-                delEvent();
-            }
-            break;//</editor-fold>
-            
-        default:
-            // unknown message
-            //addEvent(EV_Error, OS.Event[0].eventType);
-            delEvent();
-            break;
-    }
-}// </editor-fold>
-
-// <editor-fold defaultstate="collapsed" desc="void ScanADC(void)">
-void ScanADC(void)
-{
-    ADC_Data.count=0;
-    ADCON0bits.CHS=ADC_Data.count;
-    ADCON0bits.GO=1;
-}// </editor-fold>
-
-// <editor-fold defaultstate="collapsed" desc="void InitGlobals(void)">
-void InitGlobals(void)      // Initialize Global Variables
-{
-    int i;
+    int i,x,y;
 
     for(i=0;i<7;i++)
     {
@@ -423,10 +90,10 @@ void InitGlobals(void)      // Initialize Global Variables
     ADC_Data.count=15;          // Read internal reference first
     ADC_Data.refvalue=1203000;    // datasheet says 1,2V. this value is for finetuning (in µV)
     
-    for (i=0;i<ISR_LF_Count;i++)
+    for (i=0;i<LF_Count;i++)
     {
-        isr_lf_count[i].Count = 0;
-        isr_lf_count[i].Wait = 0xFFFF;       
+        lf_count[i].count = 0;
+        lf_count[i].wait = 0xFFFF;       
     }
     for (i=0;i<ISR_HF_Count;i++)
     {
@@ -443,10 +110,49 @@ void InitGlobals(void)      // Initialize Global Variables
     rtc.year=0;
 #endif
     
+#ifdef MOD_Display
+//    for(y=0;y<BufferLines;y++)
+//    {
+//        for(x=0;x<20;x++)
+//        {
+//            Display.Buffer[y][x]=' ';
+//        }
+//    }
+//    Display.cursor_x=0;
+//    Display.cursor_y=0;
+//    Display.view_x=0;
+//    Display.view_y=0;
+//    Display.light=1;    // if light is only switched, it should be on by default. if dimmed, this should set minimum
+#endif /* MOD_Display */
+    
+#if defined MOD_UART
+    uart.rx_bytes = 0;
+    uart.tx_bytes = 0;
+    uart.baud = 1;
+    uart.busy = 0;
+    for(x=0;x<RX_BUFF_SIZE;x++)
+    {
+        uart.rx_buff[x] = 0;
+    }
+    for(x=0;x<TX_BUFF_SIZE;x++)
+    {
+        uart.tx_buff[x] = 0;
+    }
+#endif /* MOD_UART */
+    
+#ifdef MOD_Console
+    c_clr();
+#endif /* MOD_Console */
 }// </editor-fold>
 
-// <editor-fold defaultstate="collapsed" desc="void InitChip(void)">
-void InitChip(void)         // Configure the Hardware Modules
+// <editor-fold defaultstate="collapsed" desc="void OS_InitChip(void)">
+/********************************************************************************\
+ *                      Hardware Initialization                                 *
+ *                                                                              *
+ * Chip Hardware is initialized here. Configure Timers, ADCs and the like       *
+ * Also set interrupt prioritys and enable interrupts                           *
+\********************************************************************************/
+void OS_InitChip(void)         // Configure the Hardware Modules
 {
     // Init Clock
     OSCCONbits.IRCF=0b111;      // Internal Clock at Max (16 MHz)
@@ -469,27 +175,27 @@ void InitChip(void)         // Configure the Hardware Modules
     //ADCON0bits.GO =1;         // Start ADC
     
     // Disable unused A/D-Chans
- /* ANSELHbits.ANS8=1;
+    ANSELHbits.ANS8=1;
     ANSELHbits.ANS9=1;
     ANSELHbits.ANS10=1;
     ANSELHbits.ANS11=1;
-    ANSELHbits.ANS12=1;*/
+    ANSELHbits.ANS12=1;
     #endif
     
-    // Timer0 as HF counter (rtc etc.)
+    // Timer0 as HF counter 
     T0CONbits.T08BIT = 1;       // 8-bit Mode
     T0CONbits.T0CS = 0;         // Use Fosc
     T0CONbits.T0PS = 0b010;     // Prescaler 1:8
     T0CONbits.PSA = 0;          // Use Prescaler
     T0CONbits.TMR0ON=0;         // Stop Timer0
 
-    // Timer1 as LF counter
-    T1CONbits.T1CKPS=0;         // prescale 1:1
+    // Timer1 as LF counter, dedicated to rtc
     T1CONbits.RD16=1;
-    T1CONbits.T1OSCEN=0;
-    T1CONbits.T1RUN=0;
-    T1CONbits.NOT_T1SYNC=1;
-    T1CONbits.TMR1CS=0;
+    T1CONbits.T1CKPS=3;         // prescale 8:1
+    T1CONbits.T1OSCEN=0;        // don't use external resonator for now
+    T1CONbits.T1RUN=0;          // do not use as clock source
+    T1CONbits.NOT_T1SYNC=1;     // don't use external sync
+    T1CONbits.TMR1CS=0;         // use cpu-clock as source
     T1CONbits.TMR1ON=0;         // Stop Timer1
 
     // external interrupt 0 for ps2-keyboard
@@ -520,13 +226,31 @@ void InitChip(void)         // Configure the Hardware Modules
     T2CONbits.TMR2ON = 1;
     #endif /* MOD_HardPWM */
 
+    // UART Module
+    #ifdef MOD_UART
+    BAUDCONbits.BRG16=1;        // set Baudrate Generator to 16bit mode
+    TXSTAbits.BRGH=1;           // set Baudrate Multiplier
+    SPBRGH=BAUD_H;              // set high byte of Baudrate
+    SPBRG=BAUD_L;               // set low byte of Baudrate
+    RX_t = 1;                   // set TRIS bits as input
+    TX_t = 1;                   // set TRIS bits as input
+    TXSTAbits.SYNC=0;           // set usart to async mode
+    RCSTAbits.CREN=1;           // enable reciever circuit
+    RCSTAbits.SPEN=1;           // enable the module
+    //TXSTAbits.TXEN=1;           // enable the transmitter. this will set the interrupt flag
+    //TXREG='M';
+    #endif /* MOD_UART */
+    
     // configure irq priority
     RCONbits.IPEN = 1;          // enable priority
     INTCON2bits.TMR0IP = 1;     // Timer 0  : High Priority
     IPR1bits.TMR1IP = 1;        // Timer 1  : High Priority
     PIR1bits.TMR2IF = 0;        // Timer 2  : Low Priority
     IPR1bits.ADIP = 0;          // ADC      : Low Priority
-    IPR1bits.SSPIP = 0;         // I2C      : Low Priority
+    #ifdef MOD_UART
+    IPR1bits.TXIP=0;            // UART tx  : Low Priority
+    IPR1bits.RCIP=0;            // UART rx  : Low Priority
+    #endif /* MOD_UART */
 
     // reset flags and enable irqs
     INTCONbits.TMR0IF = 0;          // Timer 0
@@ -538,6 +262,13 @@ void InitChip(void)         // Configure the Hardware Modules
     PIR1bits.ADIF = 0;          // clear AD interrupt
     PIE1bits.ADIE = 1;          // enable AD interrupt
     #endif /* MOD_ADC */
+    
+    #ifdef MOD_UART
+    PIR1bits.TXIF=0;            // reset tx interrupt flag
+    PIE1bits.TXIE=1;            // enable tx interrupt
+    PIR1bits.RCIF=0;            // reset rx interrupt flag
+    PIE1bits.RCIE=1;            // enable rx interrupt
+    #endif /* MOD_UART */
 
     #ifdef MOD_Input_KB_PS2         // INT0 for PS2-Keyboard
     INTCONbits.INT0IF = 0;
@@ -549,68 +280,386 @@ void InitChip(void)         // Configure the Hardware Modules
     PIE1bits.SSPIE = 1;         // enable I2C interrupt
     #endif /* MOD_FlashFS_extI2C */
     
-    // finally, enable global irqs
-    INTCONbits.GIEH = 1;
-    INTCONbits.GIEL = 1;
+//    // finally, enable global irqs
+//    INTCONbits.GIEH = 1;
+//    INTCONbits.GIEL = 1;
     
 }// </editor-fold>
 
-// <editor-fold defaultstate="collapsed" desc="unsigned long reflect (unsigned long crc, int bitnum)">
-unsigned long reflect (unsigned long crc, int bitnum)
+// <editor-fold defaultstate="collapsed" desc="void InitOS(void)">
+void InitOS(void)
 {
+    char i;
 
-	// reflects the lower 'bitnum' bits of 'crc'
+    OS.isInitialized=0;
 
-	unsigned long i, j=1, crcout=0;
+    // Handle reset first
+    OS.Rdetect=ResetToken;
+    // TODO: evaluate these first!
+    OS.Rcount=0;
+    OS.RcountBOR=0;
+    OS.RcountPOR=0;
+    OS.RcountRI=0;
+    OS.RcountWDT=0;
+    OS.RcountSO=0;
+    OS.RcountSU=0;
+    
+    // now, initialize runlevel
+    OS.prev_runlevel=RL_Boot;
+    OS.runlevel=RL_Boot;
+    OS.runmode=0x00;
+    
+    // determine CPU clock and define System Timing
+    
+    OS.F_Display=2;                 // TODO: create an array to store system timings
+    OS.F_ADC=1;                     // use floats for timings to enable refresh rates < 1 / second
+    setTiming();
+//    isr_hf_count[EV_HFT_rtc].Wait = ( 1000 * OS.CPUClock / 16 ) / 2048;
+//    isr_hf_count[EV_HFT_display].Wait = isr_hf_count[EV_HFT_rtc].Wait / OS.F_Display;
 
-	for (i=(unsigned long)1<<(bitnum-1); i; i>>=1) {
-		if (crc & i) crcout|=j;
-		j<<= 1;
-	}
-	return (crcout);
+    // clear timing counters
+    OS.FPS=0;
+    OS.Framecounter=0;
+    OS.Loopcount=0;
+    OS.LPS=0;
+    
+    // clear the EventBuffer Pipeline
+    for(i=0;i<EventBuffer;i++)
+    {
+        OS.Event[i].eventData=0;
+        OS.Event[i].eventType=EV_Null;
+    }
+    OS.numEvents=0;
+
+    // clear environmental variables
+    OS.Temp=0;
+    OS.U12V=0;
+    OS.U3V3=0;
+    OS.U5V0=0;
+
+    // clear module hook variables
+    OS.DisplayBrightness=DefaultBrightness;
+    OS.DisplayInitialized=0;
+    OS.DisplayType=0;
+    
+    // OS should be in ready state now
+    OS.isInitialized=1;
+
 }// </editor-fold>
 
-// <editor-fold defaultstate="collapsed" desc="unsigned long crc32(unsigned char* p, unsigned long len)">
-unsigned long crc32(unsigned char* p, unsigned long len)
+void setTiming(void)
 {
+    unsigned long temp;
+    float f_temp;
+    
+    OS.CPUClock=getCPUClock();
+    temp = (OS.CPUClock ) / 4;      // instructions per millisecond
+    temp = temp / 1000;             // instructions per microsecond
+    f_temp= 1 / ((float) temp);     // microseconds per instruction
+    OS.Tinst = 1000 * f_temp;       // nanoseconds per instruction //(1000000 / OS.CPUClock) * 4; // in ns
+    
+    // TODO: derive these from OS.CPUClock to enable clock switching
+    temp = OS.CPUClock / 8000;
+    lf_count[LFT_rtc].wait = temp;      // postscale for rtc
+    lf_count[LFT_display].wait = lf_count[LFT_rtc].wait / OS.F_Display;
+    lf_count[LFT_adc].wait = lf_count[LFT_rtc].wait / OS.F_ADC;
+}
 
-	// fast bit by bit algorithm without augmented zero bytes.
-	// does not use lookup table, suited for polynom orders between 1...32.
-
-    const int order = 32;
-    const unsigned long polynom = 0x4c11db7;
-    const unsigned long crcxor = 0xffffffff;
-    const int refin = 1;
-    const int refout = 1;
-    unsigned long crchighbit;
-    unsigned long crcmask;
-    unsigned long i, j, c, bitt;
-    unsigned long crc = 0xffffffff;
-
-    crcmask = ((((unsigned long)1<<(order-1))-1)<<1)|1;
-    crchighbit = (unsigned long)1<<(order-1);
-
-	for (i=0; i<len; i++) {
-
-		c = (unsigned long)*p++;
-		if (refin) c = reflect(c, 8);
-
-		for (j=0x80; j; j>>=1) {
-
-			bitt = crc & crchighbit;
-			crc<<= 1;
-			if (c & j) bitt^= crchighbit;
-			if (bitt) crc^= polynom;
-		}
-	}
-
-	if (refout) crc=reflect(crc, order);
-	crc^= crcxor;
-	crc&= crcmask;
-
-	return(crc);
+// <editor-fold defaultstate="collapsed" desc="unsigned char addEvent(const unsigned char type, const unsigned int data)">
+unsigned char addEvent(const unsigned char type, const unsigned int data)
+{
+    if(OS.numEvents >= EventBuffer )
+    {
+        return 0;       // Buffer Full
+    }
+    OS.Event[OS.numEvents].eventType=type;
+    OS.Event[OS.numEvents].eventData=data;
+    OS.numEvents++;
+    return 1;
 }// </editor-fold>
 
+// <editor-fold defaultstate="collapsed" desc="void delEvent(void)">
+void delEvent(void)
+{
+    /**********************************************************\
+     * This Function rotates the Event Buffer.                *
+     *                                                        *
+     * TODO: Leave the Buffer static, and just have counters  *
+     *          controlling where to read the current event,  *
+     *          where to put new events and so on. this would *
+     *          save lots of processor time                   *
+    \**********************************************************/
+    char i;
+    if(OS.numEvents>0)       
+    {
+        for(i=0; i<EventBuffer-1; i++)
+        {
+            OS.Event[i].eventType=OS.Event[i+1].eventType;
+            OS.Event[i].eventData=OS.Event[i+1].eventData;
+        }
+        OS.Event[EventBuffer-1].eventType=EV_Null;
+        OS.Event[EventBuffer-1].eventData=0;
+        OS.numEvents--;
+    }
+}// </editor-fold>
+
+// <editor-fold defaultstate="collapsed" desc="void OS_Event(void)">
+void OS_Event(void)
+{
+    char temp;
+    OS.Loopcount++;
+
+    switch(OS.Event[0].eventType)
+    {
+        case EV_Null:       // <editor-fold defaultstate="collapsed" desc="EV_Null">
+            OS.IdleCount++;
+            delEvent();
+            break;//</editor-fold>
+            
+        case EV_rtc:        // <editor-fold defaultstate="collapsed" desc="EV_rtc">
+            IncrementRTC();
+            OS.FPS=OS.Framecounter;
+            OS.LPS=OS.Loopcount;
+            OS.CPUIdlePercent=  ( (float)( (float)OS.IdleCount / (float)OS.Loopcount ) * (float)100 );
+            OS.Framecounter=0;
+            OS.Loopcount=0;
+            OS.IdleCount=0;
+            delEvent();
+            break;//</editor-fold>
+            
+        case EV_KeyMake:    // <editor-fold defaultstate="collapsed" desc="EV_KeyMake">
+            #ifdef MOD_Input_KB_PS2
+            temp=OS.Event[0].eventData;
+            if( temp == 0x13)                   // Enter Key
+            {
+                // process command here
+                d_cr();
+            }
+            else if( temp == 0x27)              // ESC Key
+            {
+                d_clr();
+            }
+            else if(isprint(temp))              // printable (ASCII) char
+            {
+                if(Display.cursor_x>19)         // watch for end of line
+                {
+                    d_cr();
+                }
+                Display.Buffer[Display.cursor_y][Display.cursor_x++]=temp;
+            }
+            delEvent();
+            #else   /* MOD_Input_KB_PS2 */
+            addEvent(EV_Error, EV_E_EVinv);
+            delEvent();
+            #endif /* MOD_Input_KB_PS2 */
+            break;//</editor-fold>
+            
+        case EV_LF_Timer:   // <editor-fold defaultstate="collapsed" desc="EV_LF_Timer">
+            
+            switch(OS.Event[0].eventData)
+            {
+                case EV_LFT_count:
+                    for(temp=0; temp<LF_Count;temp++)
+                    {
+                        lf_count[temp].count++;
+                        if( lf_count[temp].count > lf_count[temp].wait)
+                        {
+                            addEvent(EV_LF_Timer, ( temp + EV_LFT_rtc));
+                            lf_count[temp].count=0;
+                        }
+                    }
+                  //  delEvent();
+                    break;
+                case EV_LFT_rtc:     // rtc
+                //    delEvent();
+                    addEvent( EV_rtc, 0);
+                    break;
+                case EV_LFT_display:         // display
+                   // delEvent();
+                    addEvent( EV_Display, 0);
+                    break;
+                default:    // HF-Timer ?
+              //      delEvent();
+                    break;
+            }
+            //addEvent(EV_rtc, 0);
+            delEvent();
+            break;//</editor-fold>
+            
+        case EV_HF_Timer:   // <editor-fold defaultstate="collapsed" desc="EV_HF_Timer">
+            switch(OS.Event[0].eventData)
+            {
+//                case EV_HFT_rtc:     // rtc
+//                    delEvent();
+//                    //addEvent( EV_rtc, 0);
+//                    break;
+//                case EV_HFT_display:         // display
+//                    delEvent();
+//                    //addEvent( EV_Display, 0);
+//                    break;
+                case 2:     // HF-Timer 2
+                    break;
+                case 3:     // HF-Timer 3
+                    break;
+                default:    // HF-Timer ?
+                    delEvent();
+                    break;
+            }
+            
+            break;//</editor-fold>
+            
+        case EV_ScanMake:   // <editor-fold defaultstate="collapsed" desc="EV_ScanMake">
+            #ifdef MOD_Input_KB_PS2
+            if( (OS.Event[0].eventData == 0x12) | (OS.Event[0].eventData == 0x59) )
+            {
+                Keyboard.Shift=1;
+            }
+            else if( (OS.Event[0].eventData == 0x14) )
+            {
+                Keyboard.Strg=1;
+            }
+            else
+            {
+                addEvent( EV_KeyMake, getKeyCode( OS.Event[0].eventData ));
+            }
+            delEvent();
+            #else   /* MOD_Input_KB_PS2 */
+            addEvent(EV_Error, EV_E_EVinv);
+            delEvent();
+            #endif /* MOD_Input_KB_PS2 */
+            break;//</editor-fold>
+            
+        case EV_ScanBreak:  // <editor-fold defaultstate="collapsed" desc="EV_ScanBreak">
+            #ifdef MOD_Input_KB_PS2
+            if( (OS.Event[0].eventData == 0x12) | (OS.Event[0].eventData == 0x59) )
+            {
+                Keyboard.Shift=0;
+            }
+            else if( (OS.Event[0].eventData == 0x14) )
+            {
+                Keyboard.Strg=0;
+            }
+            else
+            {
+                addEvent( EV_KeyBreak, getKeyCode( OS.Event[0].eventData ));
+            }
+            delEvent();
+            #else   /* MOD_Input_KB_PS2 */
+            addEvent(EV_Error, EV_E_EVinv);
+            delEvent();
+            #endif /* MOD_Input_KB_PS2 */
+            break;//</editor-fold>
+            
+        case EV_Display:    // <editor-fold defaultstate="collapsed" desc="EV_Display">
+            if(OS.DisplayInitialized==1)
+            {
+                OS.Framecounter++;
+                RefreshDisplay();
+            }                                    
+            delEvent();
+            break;//</editor-fold>
+            
+        case EV_Error:      // <editor-fold defaultstate="collapsed" desc="EV_Error">
+            // do something about it
+            c_print("Error \0");
+            c_value(OS.Event[0].eventData);
+            c_print("\n\0");
+            // TODO: we might want to send errors directly to uart or something
+            /*while(OS.Event[0].eventType == EV_Error)
+            {
+                delEvent();
+            }*/
+            delEvent();
+            break;//</editor-fold>
+            
+        case EV_uart_error: // <editor-fold defaultstate="collapsed" desc="EV_uart_error">
+            // do something about it
+            switch(OS.Event[0].eventData)
+            {
+                case EV_E_uart_frame:
+                    // recieve frame error
+                    // as i have read somewhere, 
+                    // these can be used for clock tuning somehow
+                    break;
+                case EV_E_uart_of:
+                    // buffer overflow
+                    break;
+                default:
+                    // unknown error
+                    break;
+            }
+            delEvent();
+            break;//</editor-fold>
+            
+        case EV_uart_rx:    // <editor-fold defaultstate="collapsed" desc="EV_uart_rx">
+            #ifdef MOD_UART
+            // recieved byte
+            if(OS.Event[0].eventData == '\r')
+            {
+                // command recieved
+                // copy uart rx buffer to command buffer
+                
+                // clear buffer
+                for(temp=0;temp<RX_BUFF_SIZE;temp++)
+                {
+                    uart.rx_buff[temp] = 0;
+                }
+                uart.rx_bytes=0;
+            }
+            else
+            {
+                if(uart.rx_bytes<RX_BUFF_SIZE)
+                {
+                    uart.rx_buff[uart.rx_bytes] = OS.Event[0].eventData;
+                    uart.rx_bytes++;
+                }
+                else
+                {
+                    addEvent(EV_uart_error, EV_E_uart_iof);
+                    uart.rx_bytes=0;
+                    for(temp=0;temp<RX_BUFF_SIZE;temp++)
+                    {
+                        uart.rx_buff[temp] = 0;
+                    }
+                }
+            }
+            delEvent();
+            #else   /* MOD_UART */
+            addEvent(EV_Error, EV_E_EVinv);
+            delEvent();
+            #endif /* MOD_UART */
+            break;//</editor-fold>
+            
+        case EV_uart_tx:    // <editor-fold defaultstate="collapsed" desc="EV_uart_tx">
+            #ifdef MOD_UART
+            // no more bytes to send
+            // clear buffer
+            uart.busy = 0;
+            clearBuffTX();
+            delEvent();
+            #else   /* MOD_UART */
+            addEvent(EV_Error, EV_E_EVinv);
+            delEvent();
+            #endif /* MOD_UART */
+            break;//</editor-fold>
+            
+        default:            // <editor-fold defaultstate="collapsed" desc="Unhandled Event">
+            // unknown message
+            addEvent(EV_Error, EV_E_EVinv);
+            delEvent();
+            break;//</editor-fold>
+    }
+}// </editor-fold>
+
+// <editor-fold defaultstate="collapsed" desc="void ScanADC(void)">
+void ScanADC(void)
+{
+    ADC_Data.count=0;
+    ADCON0bits.CHS=ADC_Data.count;
+    ADCON0bits.GO=1;
+}// </editor-fold>
+
+// <editor-fold defaultstate="collapsed" desc="int crc16(char* ptr, char len)">
 int crc16(char* ptr, char len)
 {
   char data, i;
@@ -635,9 +684,246 @@ int crc16(char* ptr, char len)
   
   return CRC16.Word;  
 }
+// </editor-fold>
 
-/*
+// <editor-fold defaultstate="collapsed" desc="void OS_SetRunlevel(unsigned char runlevel)">
+void OS_SetRunlevel(unsigned char runlevel)
+{
+    switch(OS.runlevel)             // Do Exit stuff (cleanup, carry, ...)
+    {
+        case RL_ROM_Stat:       
+            // <editor-fold defaultstate="collapsed" desc="RL_ROM_Stat">
+            OS.runmode=60;
+            OS.submode=0;
+            // </editor-fold>
+            break;
+        case RL_TestKeypad:
+            // <editor-fold defaultstate="collapsed" desc="RL_TestKeypad">
+            OS.runmode=20;
+            runlevel=RL_Setup;
+            // </editor-fold>
+            break;
+        case RL_Boot:
+            // <editor-fold defaultstate="collapsed" desc="RL_Boot">
+            // done booting. first, clear the console
+            c_clr();    // maybe the contents could be saved somewhere as boot log
+            
+            // Now start the Timers
+            T0CONbits.TMR0ON=1;     // Start Timer0
+            T1CONbits.TMR1ON=1;     // Start Timer1
+            
+            // finally, enable global irqs
+            INTCONbits.GIEH = 1;
+            INTCONbits.GIEL = 1;
+            // </editor-fold>
+            break;
+        default:
+            // invalid runlevel should cause an error message
+            OS.runmode=0;
+            OS.submode=0;
+            break;
+    }
+
+    OS.prev_runlevel=OS.runlevel;   // prev_runlevel might be unnecessary
+    OS.runlevel=runlevel;
+
+    switch(OS.runlevel)             // Do Entry stuff (init, SFR's, ...)
+    {
+        default:
+            //d_clr();
+            break;
+    }
+}// </editor-fold>
+
+// <editor-fold defaultstate="collapsed" desc="void OS_delay_ns(unsigned long nanoseconds)">
+/********************************************************\
+ * Delay at least the specified number of nanoseconds   *
+ *                                                      *
+ * The overhead has to be finetuned for each processor  *
+ * TODO: put the constants into #defines                *
+\********************************************************/
+void OS_delay_ns(unsigned int nanoseconds)
+{
+    //unsigned long loop;
+    long temp,loop;
+    
+    // 26 * Tinst per loop, check, substract. find this with disassembly
+    loop = 26 * OS.Tinst;    
+    temp = nanoseconds ;
+    
+    // substract overhead for this preparation
+    temp -= (95*OS.Tinst);
+    
+    while(temp>loop)
+    {
+        temp -= loop;
+    }
+}// </editor-fold>
+
+// <editor-fold defaultstate="collapsed" desc="void OS_delay_us(unsigned long microseconds)">
+/********************************************************\
+ * Delay at least the specified number of microseconds  *
+ *                                                      *
+ * The overhead has to be finetuned for each processor  *
+ * TODO: put the constants into #defines                *
+\********************************************************/
+void OS_delay_us(unsigned int microseconds)
+{
+    long temp,loop;
+    
+    // 26 * Tinst per loop, check, substract. find this with disassembly
+    loop = 26 * OS.Tinst;    
+    temp = microseconds * 1000;
+    
+    // substract overhead for this preparation
+    temp -= (108*OS.Tinst);
+    
+    while(temp > loop)
+    {
+        temp -= loop;
+    }
+}// </editor-fold>
+
+// <editor-fold defaultstate="collapsed" desc="void OS_delay_ms(unsigned long milliseconds)">
+void OS_delay_ms(unsigned int milliseconds)
+{
+    unsigned int i;
+    for(i=0; i<milliseconds; i++)
+    {
+        OS_delay_us(1000);
+    }
+}// </editor-fold>
+
+// <editor-fold defaultstate="collapsed" desc="void ConvertVoltages(void)">
+/****************************************************\
+ *  Convert ADC-Values to actual Voltage Levels     *
+ *                                                  *
+ * TODO: take the voltage levels out of the OS      *
+ *          and store them inside the ADC struct    *
+ *          also, put this function in separate     *
+ *          source file for the ADC module          *
+ *          change the constants to #defines        *
+\****************************************************/
+void ConvertVoltages(void)  
+{
+    unsigned long temp,tmp1,tmp2,tmp3;
+
+    tmp1=ADC_Data.refvalue;
+    tmp2=ADC_Data.vref;
+    tmp3=tmp1/tmp2;
+    tmp1=ADC_Data.channel[0];
+    tmp2=ADC_Data.channel[1];
+
+    temp=tmp3 * 1024;                 // Calculate 3,3V
+    OS.U3V3 = temp/1000;                                    // in mV
+
+    temp= 2.01 * tmp3 * tmp1;      // Calculate 5,0V
+    OS.U5V0=temp/1000;                                     // in mV
+
+    temp= 5.89 * tmp3 * tmp2 ;       // Calculate 12,0V
+    OS.U12V=temp/1000;                                      // in mV
+
+    temp=0;
+}// </editor-fold>
+
+// <editor-fold defaultstate="collapsed" desc="unsigned int getCPUClock(void)">
+unsigned long getCPUClock(void)
+{
+    unsigned long temp=0;
+
+#if defined(__18F46K20)
+    // <editor-fold defaultstate="collapsed" desc="processor specific">
+    switch(OSCCONbits.IRCF)
+    {
+        case 0:
+            temp = 31;
+            break;
+        case 1:
+            temp=250;
+            break;
+        case 2:
+            temp=500;
+            break;
+        case 3:
+            temp=1000;
+            break;
+        case 4:
+            temp=2000;
+            break;
+        case 5:
+            temp=4000;
+            break;
+        case 6:
+            temp=8000;
+            break;
+        case 7:
+            temp=16000;
+            break;
+    }
+    if(OSCTUNEbits.PLLEN==1)
+    {
+        temp=temp*4;
+    }// </editor-fold>
+#endif
+
+    return temp;
+}// </editor-fold>
+
+// <editor-fold defaultstate="collapsed" desc="void OS_delay_1S(void)">
+void OS_delay_1S(void)           // Do Nothing
+{
+    int i;
+    for(i=0;i<Slowboot;i++)
+    {
+        OS_delay_us(10000);
+    }
+}// </editor-fold>
+
+// <editor-fold defaultstate="collapsed" desc="void float2string(char * output, float value)">
+void float2string(char * output, float value)
+{
+    //char string[10];
+    char temp[3]={0,0,0};
+    //int count=0;
+    int tmp=0;
+    float max_p=100;
+    float min_p=0.001;
+    float p=max_p;
+    char pre=0;
+
+    if(value > (max_p * 10)-1 )
+        return;
+
+    while(p >= min_p)
+    {
+        tmp=0;
+        temp[0]=0;
+        temp[1]=0;
+        temp[2]=0;
+
+        while(value > p)
+        {
+            value -= p ;
+            tmp++;
+            pre=1;
+        }
+        if(tmp>0 | pre)
+        {
+            //itoa(temp, tmp, 16);
+            strcat (output, temp);
+        }
+
+        p=p/10;
+        if(p==1)
+            pre=1;
+
+        if(p==0.1)
+            strcat (output, ".");
+    }
+}// </editor-fold>
+
 // <editor-fold defaultstate="collapsed" desc="#pragma romdata system_strings">
+/*
 #pragma romdata system_strings
 const rom char setupstring[5][6][11]={
 
@@ -694,6 +980,6 @@ const rom char PWMstring[6][11]={
     "CH2 P     \n",
     "+ PRESET +\n",
     "   EXIT   \n"
-};
+};*/
+
 // </editor-fold>
-*/

@@ -28,19 +28,35 @@ extern "C" {
 #define EV_I2C_tx       0x21    // data = byte to transmit
 #define EV_I2C_error    0x22    // data = error code
 #define EV_I2C_reset    0x24    // data = void  (I2C Module needs reset)
+    
+    // UART
+#define EV_uart_rx      0x30    // data = recieved byte
+#define EV_uart_tx      0x31    // byte transmit completed
+#define EV_uart_error   0x32    // data = error code
 
     // Software timers
 #define EV_LF_Timer     0xF0    // data = timer-number
 #define EV_HF_Timer     0xF1    // data = timer-number
 #define EV_Error        0xFF    // data = errorcode
 
-    // HF-Timer SubEvents
-#define EV_HFT_rtc      0x00
-#define EV_HFT_display  0x01
+    // LF-Timer SubEvents
+#define EV_LFT_count    0x01    // count the counters
+#define EV_LFT_rtc      0x02    // increment rtc
+#define EV_LFT_display  0x03    // redraw display
+
+    // Error Codes
+    // UART Error Codes
+#define EV_E_uart_frame 0x01    // uart reciever frame error
+#define EV_E_uart_of    0x02    // uart reciever overflow
+#define EV_E_uart_iof   0x03    // internal buffer overflow
     
-    // I2C error codes
-#define EV_i2cerr_of    0x00    // Overflow error
-#define EV_i2cerr_wc    0x01    // write collission
+    // OS Error Codes
+#define EV_E_RLinv      0x04    // invalid runlevel
+#define EV_E_EVinv      0x05    // unhandled Event
+    
+    // I2C Error Codes
+#define EV_i2cerr_of    0x06    // Overflow error
+#define EV_i2cerr_wc    0x07    // write collission
     
 
     
