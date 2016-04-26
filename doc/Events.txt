@@ -1,0 +1,56 @@
+The DevelOS Event System
+
+1. Overview
+
+To handle multiple Tasks (almost) simultaneously, i have implementet a simple Event Queue.
+Each event consists of two bytes of data, one as identifier, and one as data. The relevant hooks 
+to this system are the following files and functions:
+
+events.h:	This file contains the #define statements for all possible events. Each one is defined as 8bit, so there can 			be up to 256 diffrent events. the data field in the event can be used to create sub-events if neccessary.
+		It also contains #define statements for error codes, because these are also handled as events
+
+DevelOS.h:	The struct is declared here, and you also find the "#define EventBuffer" statement here. this statement 
+		determines the length of the queue. if you get lots of queue full errors, try increasing this value. but 
+		be aware that each event has 2 bytes of data, and the maximum size for a struct is limited by the 
+		architecture of the PIC processor. On my device, it can not be more than 128 bytes, so the maximum queue
+		length would be 64. right now it is running just fine with a queue of 8, and less would propably do.
+
+DevelOS.c:
+
+OS_Event():	This function  does the actual event handling. it gets called once every loop, and 
+		services one event from the queue. if needed, it can send out another event to take further action.
+
+addEvent():	This function in DevelOS.c puts a new event at the end of the queue. it returns an error code if 
+		the queue is full
+
+delEvent():	This function deletes the active event from the queue and rotates the event buffer by one. it 
+		must be called from OS_Event() after each event, or else the event will occur permanently
+
+
+This simple system allows great flexibility and efficient interrupt handling. The interrupt service routines 
+call addEvent() to tell the OS that something happened, so they can be kept relatively short. for example, the timer 1 
+module overflows and generates an interrupt. the ISR then adds an event to the queue. everything else is done in 
+OS_Event(). this is, incrementing the software timers, and checking if one of them has overflown. if so, the event handler generates another event. that can be incrementing the RTC, redrawing the display or starting the ADC. or whatever. another example is the error handling. if an event is found in the queue, but is not serviced in OS_Event(), an error event 
+is generated, having the unhandled event identifier as data. 
+
+2. Structure of OS_Event()
+
+The main Event Handler function consists of one big switch() statement. it has one case: for each possible event, wich 
+can have their own switch() statement inside i needed. 
+at the beginning of the function, the loop counter is incremented, to keep track of how many loops per second the processor
+is doing. this can be an indicator to tell if more functionality can be added, or if some task uses a lot of time.
+
+3. Adding your own events
+
+to add a new event to the system, first declare a new #define for it inside events.h
+the go to OS_Event(), and add a new case: to the switch() statement. first add a delEvent(); call at the end of your 
+case: just before the break; to tell the system that the event has been dealt with. then write the actual code you want to
+run whenever the event occurs. if needed, you can send other events from within your case: by calling addEvent. or you can
+put a sub-switch() in there, depending on the Event data byte. thats it. your event is now integrated into the system.
+
+4. Calling your event
+
+now that you have your event hooked into the system, you will want to call it from somewhere. this is done simply by calling
+addEvent(<your-event>, <your-data>); somewhere. the question here is, where? the call could be inside an interrupt service
+routine, to act on some external interrupts. you could also hook into one of the software timers, wich i will describe in 
+another document. you could also call your event from some other event that is already there. for example if you want to have your event called once every second, you could add your call to the case: where the rtc gets incremented. 

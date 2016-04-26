@@ -8,6 +8,8 @@
  */
 #include "./DevelOS.h"
 
+        // Initialisation
+
 // <editor-fold defaultstate="collapsed" desc="void OS_HandleReset(void)">
 /****************************************************************\
  *                  DevelOS Reset Handler                       *
@@ -347,25 +349,7 @@ void InitOS(void)
 
 }// </editor-fold>
 
-// <editor-fold defaultstate="collapsed" desc="void setTiming(void)">
-void setTiming(void)
-{
-    unsigned long temp;
-    float f_temp;
-    
-    OS.CPUClock=getCPUClock();
-    temp = (OS.CPUClock ) / 4;      // instructions per millisecond
-    temp = temp / 1000;             // instructions per microsecond
-    f_temp= 1 / ((float) temp);     // microseconds per instruction
-    OS.Tinst = 1000 * f_temp;       // nanoseconds per instruction //(1000000 / OS.CPUClock) * 4; // in ns
-    
-    // TODO: derive these from OS.CPUClock to enable clock switching
-    temp = OS.CPUClock / 8000;
-    lf_count[LFT_rtc].wait = temp;      // postscale for rtc
-    lf_count[LFT_display].wait = lf_count[LFT_rtc].wait / OS.F_Display;
-    lf_count[LFT_adc].wait = lf_count[LFT_rtc].wait / OS.F_ADC;
-}
-//</editor-fold>
+        // Event Handling
 
 // <editor-fold defaultstate="collapsed" desc="unsigned char addEvent(const unsigned char type, const unsigned int data)">
 unsigned char addEvent(const unsigned char type, const unsigned int data)
@@ -470,21 +454,17 @@ void OS_Event(void)
                             lf_count[temp].count=0;
                         }
                     }
-                  //  delEvent();
                     break;
                 case EV_LFT_rtc:     // rtc
-                //    delEvent();
                     addEvent( EV_rtc, 0);
                     break;
                 case EV_LFT_display:         // display
-                   // delEvent();
                     addEvent( EV_Display, 0);
                     break;
                 default:    // HF-Timer ?
               //      delEvent();
                     break;
             }
-            //addEvent(EV_rtc, 0);
             delEvent();
             break;//</editor-fold>
             
@@ -653,6 +633,144 @@ void OS_Event(void)
     }
 }// </editor-fold>
 
+        // Delays
+
+// <editor-fold defaultstate="collapsed" desc="void OS_delay_ns(unsigned long nanoseconds)">
+/********************************************************\
+ * Delay at least the specified number of nanoseconds   *
+ *                                                      *
+ * The overhead has to be finetuned for each processor  *
+ * TODO: put the constants into #defines                *
+\********************************************************/
+void OS_delay_ns(unsigned int nanoseconds)
+{
+    //unsigned long loop;
+    long temp,loop;
+    
+    // 26 * Tinst per loop, check, substract. find this with disassembly
+    loop = 26 * OS.Tinst;    
+    temp = nanoseconds ;
+    
+    // substract overhead for this preparation
+    temp -= (95*OS.Tinst);
+    
+    while(temp>loop)
+    {
+        temp -= loop;
+    }
+}// </editor-fold>
+
+// <editor-fold defaultstate="collapsed" desc="void OS_delay_us(unsigned long microseconds)">
+/********************************************************\
+ * Delay at least the specified number of microseconds  *
+ *                                                      *
+ * The overhead has to be finetuned for each processor  *
+ * TODO: put the constants into #defines                *
+\********************************************************/
+void OS_delay_us(unsigned int microseconds)
+{
+    long temp,loop;
+    
+    // 26 * Tinst per loop, check, substract. find this with disassembly
+    loop = 26 * OS.Tinst;    
+    temp = microseconds * 1000;
+    
+    // substract overhead for this preparation
+    temp -= (108*OS.Tinst);
+    
+    while(temp > loop)
+    {
+        temp -= loop;
+    }
+}// </editor-fold>
+
+// <editor-fold defaultstate="collapsed" desc="void OS_delay_ms(unsigned long milliseconds)">
+void OS_delay_ms(unsigned int milliseconds)
+{
+    unsigned int i;
+    for(i=0; i<milliseconds; i++)
+    {
+        OS_delay_us(1000);
+    }
+}// </editor-fold>
+
+// <editor-fold defaultstate="collapsed" desc="void OS_delay_1S(void)">
+void OS_delay_1S(void)           // Do Nothing
+{
+    int i;
+    for(i=0;i<Slowboot;i++)
+    {
+        OS_delay_us(10000);
+    }
+}// </editor-fold>
+
+        // Timing Control
+
+// <editor-fold defaultstate="collapsed" desc="void setTiming(void)">
+void setTiming(void)
+{
+    unsigned long temp;
+    float f_temp;
+    
+    OS.CPUClock=getCPUClock();
+    temp = (OS.CPUClock ) / 4;      // instructions per millisecond
+    temp = temp / 1000;             // instructions per microsecond
+    f_temp= 1 / ((float) temp);     // microseconds per instruction
+    OS.Tinst = 1000 * f_temp;       // nanoseconds per instruction //(1000000 / OS.CPUClock) * 4; // in ns
+    
+    // TODO: derive these from OS.CPUClock to enable clock switching
+    temp = OS.CPUClock / 8000;
+    lf_count[LFT_rtc].wait = temp;      // postscale for rtc
+    lf_count[LFT_display].wait = lf_count[LFT_rtc].wait / OS.F_Display;
+    lf_count[LFT_adc].wait = lf_count[LFT_rtc].wait / OS.F_ADC;
+}
+//</editor-fold>
+
+// <editor-fold defaultstate="collapsed" desc="unsigned int getCPUClock(void)">
+unsigned long getCPUClock(void)
+{
+    unsigned long temp=0;
+
+#if defined(__18F46K20)
+    // <editor-fold defaultstate="collapsed" desc="processor specific">
+    switch(OSCCONbits.IRCF)
+    {
+        case 0:
+            temp = 31;
+            break;
+        case 1:
+            temp=250;
+            break;
+        case 2:
+            temp=500;
+            break;
+        case 3:
+            temp=1000;
+            break;
+        case 4:
+            temp=2000;
+            break;
+        case 5:
+            temp=4000;
+            break;
+        case 6:
+            temp=8000;
+            break;
+        case 7:
+            temp=16000;
+            break;
+    }
+    if(OSCTUNEbits.PLLEN==1)
+    {
+        temp=temp*4;
+    }// </editor-fold>
+#endif
+
+    return temp;
+}// </editor-fold>
+
+        // Other Functions
+
 // <editor-fold defaultstate="collapsed" desc="void ScanADC(void)">
 void ScanADC(void)
 {
@@ -737,65 +855,6 @@ void OS_SetRunlevel(unsigned char runlevel)
     }
 }// </editor-fold>
 
-// <editor-fold defaultstate="collapsed" desc="void OS_delay_ns(unsigned long nanoseconds)">
-/********************************************************\
- * Delay at least the specified number of nanoseconds   *
- *                                                      *
- * The overhead has to be finetuned for each processor  *
- * TODO: put the constants into #defines                *
-\********************************************************/
-void OS_delay_ns(unsigned int nanoseconds)
-{
-    //unsigned long loop;
-    long temp,loop;
-    
-    // 26 * Tinst per loop, check, substract. find this with disassembly
-    loop = 26 * OS.Tinst;    
-    temp = nanoseconds ;
-    
-    // substract overhead for this preparation
-    temp -= (95*OS.Tinst);
-    
-    while(temp>loop)
-    {
-        temp -= loop;
-    }
-}// </editor-fold>
-
-// <editor-fold defaultstate="collapsed" desc="void OS_delay_us(unsigned long microseconds)">
-/********************************************************\
- * Delay at least the specified number of microseconds  *
- *                                                      *
- * The overhead has to be finetuned for each processor  *
- * TODO: put the constants into #defines                *
-\********************************************************/
-void OS_delay_us(unsigned int microseconds)
-{
-    long temp,loop;
-    
-    // 26 * Tinst per loop, check, substract. find this with disassembly
-    loop = 26 * OS.Tinst;    
-    temp = microseconds * 1000;
-    
-    // substract overhead for this preparation
-    temp -= (108*OS.Tinst);
-    
-    while(temp > loop)
-    {
-        temp -= loop;
-    }
-}// </editor-fold>
-
-// <editor-fold defaultstate="collapsed" desc="void OS_delay_ms(unsigned long milliseconds)">
-void OS_delay_ms(unsigned int milliseconds)
-{
-    unsigned int i;
-    for(i=0; i<milliseconds; i++)
-    {
-        OS_delay_us(1000);
-    }
-}// </editor-fold>
-
 // <editor-fold defaultstate="collapsed" desc="void ConvertVoltages(void)">
 /****************************************************\
  *  Convert ADC-Values to actual Voltage Levels     *
@@ -826,59 +885,6 @@ void ConvertVoltages(void)
     OS.U12V=temp/1000;                                      // in mV
 
     temp=0;
-}// </editor-fold>
-
-// <editor-fold defaultstate="collapsed" desc="unsigned int getCPUClock(void)">
-unsigned long getCPUClock(void)
-{
-    unsigned long temp=0;
-
-#if defined(__18F46K20)
-    // <editor-fold defaultstate="collapsed" desc="processor specific">
-    switch(OSCCONbits.IRCF)
-    {
-        case 0:
-            temp = 31;
-            break;
-        case 1:
-            temp=250;
-            break;
-        case 2:
-            temp=500;
-            break;
-        case 3:
-            temp=1000;
-            break;
-        case 4:
-            temp=2000;
-            break;
-        case 5:
-            temp=4000;
-            break;
-        case 6:
-            temp=8000;
-            break;
-        case 7:
-            temp=16000;
-            break;
-    }
-    if(OSCTUNEbits.PLLEN==1)
-    {
-        temp=temp*4;
-    }// </editor-fold>
-#endif
-
-    return temp;
-}// </editor-fold>
-
-// <editor-fold defaultstate="collapsed" desc="void OS_delay_1S(void)">
-void OS_delay_1S(void)           // Do Nothing
-{
-    int i;
-    for(i=0;i<Slowboot;i++)
-    {
-        OS_delay_us(10000);
-    }
 }// </editor-fold>
 
 // <editor-fold defaultstate="collapsed" desc="void float2string(char * output, float value)">

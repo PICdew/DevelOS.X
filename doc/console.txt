@@ -1,0 +1,11 @@
+The DevelOS Console
+
+1. Overview
+
+The console inside DevelOS servers multiple purposes.
+It acts as text buffer for attached displays. they need to be double buffered to avoid changing of the content while the 
+display is rewritten.
+It is planned that this will also serve as buffer for UART communication and as debugging tool. in a debug session, you can 
+watch the global variable console.Buffer and see the output from the OS, even if the display fails for some reason. 
+It will also recieve data from the input modules and provide unified Input to the OS. Furthermore, this module will 
+contain a command handler that allows execution of commands from a serial console. It is not finished though. For now, it just has the internal text buffer and the routines for writing to this buffer.
