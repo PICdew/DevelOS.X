@@ -19,6 +19,7 @@ extern struct CONSOLE {
     unsigned char Buffer[CON_lines][CON_width]; // TODO: Console Buffer instead of double diplay buffer
     unsigned char cursor_x;                     //
     unsigned char cursor_y;                     // Cursor Position
+    unsigned char display_y;
 } console;    
 #pragma udata
     
@@ -28,7 +29,9 @@ extern struct CONSOLE {
     void c_print(const char* string[]);                         // print string to current cursor pos
     void c_cr(void);                                            // do carriage return
     void c_value(const unsigned int value);                     // convert integer to string and print to cursor. auto-omit zeroes
-    
+    char sysprint(unsigned char pre,    // prepend some spaces
+                    unsigned char str,  // print this sys_string
+                    unsigned char app); // append spaces
 /* Constant Strings in Program Memory */
 
 // <editor-fold defaultstate="collapsed" desc="Strings in ROM">

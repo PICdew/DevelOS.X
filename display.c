@@ -14,18 +14,18 @@ void InitDisplay(void)
         VFLD_CLK =1;            // CLK should be 1 in Idle State
         VFLD_DATA =0;
         VFLD_Init();
-        c_print( "VFL\0" );
+        //c_print( "VFL\0" );
     #elif defined MOD_Display_LCD
         InitLCD();
         Display.view_y=LCD.Dimensions.height-1;     // wir sehen immer die untersten zeilen
-        c_print( "LCD\0" );
+        //c_print( "LCD\0" );
     #elif defined MOD_Display_LCD_Uni
         while(InitLCD())
         {
             OS_delay_ns(LCD_E_CYC*2);
         }
         //Display.view_y=console.Buffer[];LCD.Dimensions.height-1;     // wir sehen immer die untersten zeilen
-        c_print( "LCDuni\0" );
+        //c_print( "LCDuni\0" );
     #endif
     // alles bereit, ready to go    
     OS.DisplayInitialized=1;
@@ -55,13 +55,7 @@ void RefreshDisplay(void)
         {
             for(y=0;y<LCDuni_Lines;y++)
             {
-                strncpy( LCD.Buffer[y], console.Buffer[y+LCD.viewy], LCDuni_Cols );
-//                for(x=0;x<LCDuni_Cols;x++)
-//                {
-//                    //LCD.Buffer[y][x]=Display.Buffer[Display.view_y-y][Display.view_x+x];        
-//                    //LCD.Buffer[y][x]=console.Buffer[y][x];        
-//                    // TODO: Display.view_x should always be 0 for now, this is untested
-//                }
+                strncpy( LCD.Buffer[y], console.Buffer[y + console.display_y], LCDuni_Cols );
             }
             RefreshLCD();
         }

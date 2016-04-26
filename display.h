@@ -25,20 +25,9 @@ extern "C" {
 #ifdef MOD_Display
 
 #define DefaultBrightness   7
-#define BufferLines         5  //TODO: Move buffer to console
-
-//    extern struct Disp {
-//        //unsigned char Buffer[BufferLines][20];
-//                    /* Linebuffer for Text
-//                     * This is not the Hardware Buffer, this is the internal Line Buffer for the OS
-//                     */
-//        unsigned char cursor_x;                 //
-//        unsigned char cursor_y;                 // Cursor Position
-//        unsigned char view_x;                   //
-//        unsigned char view_y;                   // Viewport. Vorerst nur Zeile
-//        unsigned char light;                    // TODO: for backlight switching/dimming
-//    } Display;
-
+    
+    extern const rom char display_driver[7];
+    
     void InitDisplay(void);                     // Hardware Specific Initialisation
     void RefreshDisplay(void);                  /* Hardware Specific Refresh Routine
                                                  * determine visible area, translate for display, and transmit data

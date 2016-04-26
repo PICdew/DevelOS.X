@@ -294,14 +294,17 @@ void main(void)
         {
             case RL_Boot:           
                 // <editor-fold defaultstate="collapsed" desc="RL_Boot">  
+                
                 switch(OS.runmode)
                 {
                     case RL_Boot_Display:       
                         // <editor-fold defaultstate="collapsed" desc="RL_Boot_Display"> 
-                        c_print("DevelOS: 8bit v0.1\0");
+                        sysprint(0, sysstr_develos, 1);
+                        sysprint(0, sysstr_version, 0);
                         c_cr();
                         //Display Init
-                        c_print("Display: \0");
+                        sysprint(0, sysstr_display, 1);
+                        c_print(display_driver);
                         InitDisplay();
                         c_cr();
                         addEvent(EV_Display, 0);
@@ -310,12 +313,11 @@ void main(void)
                         break;
                     case RL_Boot_FlashFS:       
                         // <editor-fold defaultstate="collapsed" desc="RL_Boot_FlashFS">
-                        // Init FlashFS
                         #ifdef MOD_FlashFS
                             #ifdef BOOT_SLOW 
                             OS_delay_1S();
                             #endif
-                            c_print("FlashFS: \0");
+                            sysprint(0, sysstr_flashfs, 1);
                             err = InitFlash();
                             if(err != 0)
                             {
@@ -323,14 +325,14 @@ void main(void)
                                 if(err==-1)
                                 {
                                     // no FlashFS Data Block found
-                                    c_print("formating\0");
+                                    sysprint(0, sysstr_formating, 0);
                                     c_cr();
                                     EE_format();
                                 }
                                 else if(err==-2)
                                 {
                                     // FlashFS Data Block invalid
-                                    c_print("corrupted\0");
+                                    sysprint(0, sysstr_corrupt, 0);
                                     c_cr();
                                     EE_format();
                                 }
@@ -338,15 +340,15 @@ void main(void)
                             else
                             {
                                 c_pos(0, console.cursor_y);
-                                c_print("EEPROM : \0");
-                                //sprintf( console.Buffer[console.cursor_y][console.cursor_x], "%d", Flash.eprom.UsedBlocks);
+                                sysprint(0, sysstr_eeprom, 1);
                                 c_value( Flash.eprom.UsedBlocks );
                                 c_print("/\0");
                                 c_value( Flash.eprom.Blocks );
-                                c_print(" Used\0");
+                                sysprint(1, sysstr_used, 0);
                                 c_cr();
                                 addEvent(EV_Display, 0);
                                 OS.runmode++;
+                                i=0;
                             }
                             //addEvent(EV_Display, 0);
                         #else /* MOD_FlashFS */
@@ -356,35 +358,41 @@ void main(void)
                         break;
                     case RL_Boot_Load:          
                         // <editor-fold defaultstate="collapsed" desc="RL_Boot_Load">
-                        // Load EEPROM Data  
-                        for(i=0;i<EE_Blocks;i++)
+                        if(i >= EE_Blocks)
                         {
+                            i=0;
+                            OS.runmode++;
+                        }
+                        else
+                        {
+                            sysprint(0, sysstr_block, 1);
+                            c_value(i);
+                            c_print(":\0");
+                            #ifdef BOOT_SLOW
+                            OS_delay_1S();
+                            #endif /* BOOT_SLOW */
                             switch(Flash.eprom.Block[i].signature)
                             {
-                                case EE_sig_FlashFS:
-                                    #ifdef BOOT_SLOW
-                                    OS_delay_1S();
-                                    #endif /* BOOT_SLOW */
-                                    c_print("FlashFS at \0");
-                                    c_value(i);
-                                    c_cr();                                    
+                                case EE_sig_FlashFS:                                    
+                                    //c_print("FlashFS at \0");
+                                    sysprint(1, sysstr_flashfs, 0);
                                     break;
                                 case EE_sig_System:
                                     // This holds all the static settings for the OS
-                                    #ifdef BOOT_SLOW
-                                    OS_delay_1S();
-                                    #endif /* BOOT_SLOW */
-                                    c_print("DevelOS at \0");
-                                    c_value(i);
-                                    c_cr();
-                                    //LoadEEPROM_OS(i);
+                                    sysprint(1, sysstr_develos, 0);
+                                    LoadEEPROM_OS(i);
+                                    break;
+                                case EE_sig_Free:
+                                    sysprint(1, sysstr_free, 0);
                                     break;
                                 default:
+                                    sysprint(1, sysstr_error, 0);
                                     break;
                             }
+                            c_cr();
+                            addEvent(EV_Display, 0);
+                            i++;
                         }
-                        addEvent(EV_Display, 0);
-                        OS.runmode++;
                         //</editor-fold>
                         break;
                     case RL_Boot_Input:

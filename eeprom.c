@@ -280,21 +280,21 @@ unsigned char LoadEEPROM_OS(unsigned char block)   // Read System Data from EEPR
     }
     else
     {
-        OS.prev_runlevel    = temp[0];
-        OS.runlevel         = temp[1];
-        OS.runmode          = temp[2];
+        //OS.prev_runlevel    = temp[0];
+        //OS.runlevel         = temp[1];
+        //OS.runmode          = temp[2];
         //OS.CPUClock         = temp[3];
         OS.Temp             = temp[4];
         OS.U12V             = temp[5];
         OS.U3V3             = temp[6];
         OS.U5V0             = temp[7];
-        OS.Rcount           = temp[8];
-        OS.RcountBOR        = temp[9];
-        OS.RcountPOR        = temp[10];
-        OS.RcountRI         = temp[11];
-        OS.RcountWDT        = temp[12];
-        OS.RcountSO         = temp[13];
-        OS.RcountSU         = temp[14];
+        OS.Rcount           += temp[8];
+        OS.RcountBOR        += temp[9];
+        OS.RcountPOR        += temp[10];
+        OS.RcountRI         += temp[11];
+        OS.RcountWDT        += temp[12];
+        OS.RcountSO         += temp[13];
+        OS.RcountSU         += temp[14];
 #ifdef MOD_rtc
         rtc.days            = temp[15];
         rtc.hour            = temp[16];

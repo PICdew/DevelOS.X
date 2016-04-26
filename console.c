@@ -1,16 +1,26 @@
 #include "DevelOS.h"
 
+// <editor-fold defaultstate="collapsed" desc="void c_cr(void)">
 void c_cr(void)
 {
     char i;
 
     // set cursor home
     console.cursor_x=0;
+    
+    // increment line
     console.cursor_y++;
 
+    if (console.cursor_y > LCD.Dimensions.height )
+    {
+        console.display_y++;
+    }
+    
     if(console.cursor_y >= CON_lines)
     {
         console.cursor_y=CON_lines-1;
+        console.display_y = CON_lines - LCD.Dimensions.height;
+        
         // shift Display Buffer 1 line
         for(i=0; i < CON_lines-1 ;i++)
         {
@@ -20,7 +30,9 @@ void c_cr(void)
         memset(console.Buffer[CON_lines-1], ' ', CON_width );
     }
 }
+//</editor-fold>
 
+// <editor-fold defaultstate="collapsed" desc="void c_pos(const unsigned char x, const unsigned char y)">
 void c_pos(const unsigned char x, const unsigned char y)
 {
     if(x<CON_width)
@@ -32,8 +44,9 @@ void c_pos(const unsigned char x, const unsigned char y)
         console.cursor_y=y;
     }
 }
+//</editor-fold>
 
-
+// <editor-fold defaultstate="collapsed" desc="void c_print(const char* string[])">
 void c_print(const char* string[])      // this one only works for rom strings!
 {
     char len,byte;
@@ -79,6 +92,72 @@ void c_print(const char* string[])      // this one only works for rom strings!
         }
     }
 }
+//</editor-fold>
+
+// <editor-fold defaultstate="collapsed" desc="void sysprint(unsigned char pre, unsigned char str, unsigned char app)">
+char sysprint(unsigned char pre, unsigned char str, unsigned char app)      // this one only works for rom strings!
+{
+    char len,byte;
+    char buff[CON_width];
+    len=0;
+
+    if( (pre+app+10) > CON_width)
+    {
+        // string too long
+        return -1;
+    }
+    
+    for(byte=0;byte<CON_width;byte++)
+    {
+        buff[byte]=' ';
+    }
+    byte=0;
+        
+    strcpypgm2ram( buff+pre, sys_string[str] ); //
+    
+    byte=buff[0];
+    while(byte != 0)
+    {
+        // wrap at end of line
+        if(console.cursor_x >= CON_width)
+        {
+            c_cr();
+        }
+        
+        // write byte to console buffer
+        console.Buffer[console.cursor_y][console.cursor_x++]=byte;
+
+        //read next byte from buffer
+        len++;
+        byte = buff[len];
+
+        if(byte=='\0')          // on 0x00: string terminated
+        {
+            byte=0;
+        }
+        else if(byte=='\n')     // on newline: do carriage return, also terminate string
+        {
+            c_cr();
+            byte=0;
+        }
+        else if(byte=='\r')     // on return: do carriage return, continue string
+        {
+            c_cr();
+        }
+    }
+    
+    for(byte=0;byte<app;byte++)
+    {
+        console.Buffer[console.cursor_y][console.cursor_x++]=' ';
+        if(console.cursor_x >= CON_width)
+        {
+            byte=app+1;
+        }
+    }
+}
+//</editor-fold>
+
+// <editor-fold defaultstate="collapsed" desc="void c_clr(void)">
 
 void c_clr(void)
 {
@@ -91,7 +170,11 @@ void c_clr(void)
     
     console.cursor_x=0;
     console.cursor_y=0;
+    console.display_y=0;
 }
+//</editor-fold>
+
+// <editor-fold defaultstate="collapsed" desc="void c_value(const unsigned int val)">
 
 void c_value(const unsigned int val)
 {
@@ -182,4 +265,4 @@ void c_value(const unsigned int val)
         strncpy( &console.Buffer[console.cursor_y][console.cursor_x], buff[0], CON_width );
     }*/
 }
-
+//</editor-fold>

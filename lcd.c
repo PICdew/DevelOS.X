@@ -11,6 +11,8 @@
 
 #ifdef MOD_Display_LCD
 
+const rom char display_driver[7] = "LCD\0   ";
+
 void InitLCD(void)
 {
     char i;

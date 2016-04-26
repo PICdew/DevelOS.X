@@ -12,6 +12,7 @@
 
 void IncrementRTC(void)     // Call once per sec, takes care of the rest.
 {
+    unsigned char strbuff[3];
     rtc.secs++;
 
     if (rtc.secs == 60)
@@ -42,6 +43,16 @@ void IncrementRTC(void)     // Call once per sec, takes care of the rest.
             }
         }
     }
+    
+    memset( &strbuff, 0, sizeof( strbuff ));
+    sprintf( strbuff, "%.2u", rtc.hour);
+    strncpy( rtc.string, strbuff, 2);
+    rtc.string[2]=':';
+    sprintf( strbuff, "%.2u", rtc.mins);
+    strncpy( rtc.string+3, strbuff, 2);
+    rtc.string[5]=':';
+    sprintf( strbuff, "%.2u", rtc.secs);
+    strncpy( rtc.string+6, strbuff, 2);
 }
 
 #endif
