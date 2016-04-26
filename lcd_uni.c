@@ -20,6 +20,7 @@
 #ifdef MOD_Display_LCD_Uni
 
 //char position;
+const rom char display_driver[7] = "LCDuni\0";
 
 // <editor-fold defaultstate="collapsed" desc="char InitLCD(void)">
 char InitLCD(void)

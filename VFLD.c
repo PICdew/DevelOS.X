@@ -9,6 +9,10 @@
 #include "./DevelOS.h"
 
 #if defined MOD_Display_VFLD
+
+const rom char display_driver[7] = "VFLD\0  ";
+
+
 // <editor-fold defaultstate="collapsed" desc="void VFLD_WriteByte(int byte, int adress)">
 void VFLD_WriteByte(int byte, int adress)
 {

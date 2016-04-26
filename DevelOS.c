@@ -347,6 +347,7 @@ void InitOS(void)
 
 }// </editor-fold>
 
+// <editor-fold defaultstate="collapsed" desc="void setTiming(void)">
 void setTiming(void)
 {
     unsigned long temp;
@@ -364,6 +365,7 @@ void setTiming(void)
     lf_count[LFT_display].wait = lf_count[LFT_rtc].wait / OS.F_Display;
     lf_count[LFT_adc].wait = lf_count[LFT_rtc].wait / OS.F_ADC;
 }
+//</editor-fold>
 
 // <editor-fold defaultstate="collapsed" desc="unsigned char addEvent(const unsigned char type, const unsigned int data)">
 unsigned char addEvent(const unsigned char type, const unsigned int data)
@@ -923,63 +925,25 @@ void float2string(char * output, float value)
 }// </editor-fold>
 
 // <editor-fold defaultstate="collapsed" desc="#pragma romdata system_strings">
-/*
+
 #pragma romdata system_strings
-const rom char setupstring[5][6][11]={
-
-{   "+ KEYPAD +",        // 0,0,[]   Main Menu
-    "+ EEPROM +",
-    "+  TAKT  +",
-    "+ SYSTEM +",
-    "  REBOOT  ",
-    " ERLEDIGT "},
-
-{   "SET MATRIX",        // 1,0,[]   Keypad Menu
-    "TASTENTEST",
-    "FINETUNING",
-    " ERLEDIGT ",
-    "          ",
-    "          "},
-
-{   "ROM STATUS",        // 2,0,[]   ROM Menu
-    "FORMAT ROM",
-    "ROM BACKUP",
-    "WRITE   KP",
-    "WRITE   OS",
-    " ERLEDIGT "},
-
-{   "ZEIT/DATUM",        // 3,0,[]   Clock Menu
-    "CPU   TAKT",
-    "OSC TUNING",
-    "SYS TIMING",
-    " ERLEDIGT ",
-    "          "},
-
-{   "OS FPS/LPS",        // 4,0,[]   System menu
-    "OS  RESETS",
-    "OS  UPTIME",
-    "OS   ALARM",
-    "REINIT  OS",
-    " ERLEDIGT "},
-
+const rom char sys_string[14][11]={
+    "          \0",     // empty string with trailing zero
+    "DevelOS\0   ",     // develos 
+    "8bit v0.1\0 ",     // develos version 
+    "Display:\0  ",     // display
+    "FlashFS\0   ",     // flashfs
+    "formating\0 ",     // formating
+    "corrupted!\0",     // corrupt
+    "EEPROM :\0  ",     // eeprom
+    "Used\0      ",     // used
+    "Block\0     ",     // block
+    "Error\0     ",     // Error
+    "Free\0      ",     // Free
+    "LPS:\0      ",     // LPS
+    "% Idle\0    "      // % idle
 };
-const rom char modestring[8][11]={
-    "SHOW   3,3\n",
-    "SHOW   5,0\n",
-    "SHOW  12,0\n",
-    "HIGH   PWM\n",
-    "LOW    PWM\n",
-    "+ SET UP +\n",
-    "SYSMONITOR\n",
-    " SHUTDOWN \n"
-};
-const rom char PWMstring[6][11]={
-    "CH1 D     \n",
-    "CH1 P     \n",
-    "CH2 D     \n",
-    "CH2 P     \n",
-    "+ PRESET +\n",
-    "   EXIT   \n"
-};*/
+#pragma romdata
+
 
 // </editor-fold>

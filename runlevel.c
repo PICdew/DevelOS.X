@@ -6,37 +6,19 @@ void DoStandby(void)
     // Just show uptime and clock. 
     // TODO: Try to reduce the core clock in this mode to save energy
     // But beware: so far this has always messed up everything
-//    unsigned char temp,tempx;
-    unsigned char strbuff[10];
-    unsigned char rtcstr[12];
+
     char i;
-    //unsigned char tmp[14]="\0";
-    memset( &strbuff, 0, sizeof( strbuff ));
-    //memset( &console.Buffer[1], 0x20, CON_width);
-    //temp=Display.cursor_y;
-    //tempx=Display.cursor_x;
-    
-    sprintf( strbuff, "%.2u", rtc.hour);
-    strncpy( rtcstr, strbuff, 2);
-    rtcstr[2]=':';
-    sprintf( strbuff, "%.2u", rtc.mins);
-    strncpy( rtcstr+3, strbuff, 2);
-    rtcstr[5]=':';
-    sprintf( strbuff, "%.2u", rtc.secs);
-    strncpy( rtcstr+6, strbuff, 2);
-    
-    for(i=0;i<CON_width;i++)
-    {
-        console.Buffer[1][i]=' ';
-    }
+     
     for(i=6;i<14;i++)
     {
-        console.Buffer[1][i]=rtcstr[i-6];
+        console.Buffer[1][i]=rtc.string[i-6];
     }
-    for(i=14; i<20; i++)
-    {
-        console.Buffer[1][i]=' ';
-    }
+    c_pos(6,2);
+//    sysprint(0, sysstr_lps, 1);
+//    c_value(OS.LPS);
+//    c_pos(6,3);
+//    c_value(OS.CPUIdlePercent);
+//    sysprint(0, sysstr_idle, 2);
 }
 // </editor-fold>
 

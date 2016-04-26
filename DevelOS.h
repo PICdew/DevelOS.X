@@ -29,7 +29,7 @@ extern "C" {
 #define REFval 10
 
 //#define BOOT_SLOW                           // This will add some delays to the startup process
-#define Slowboot            5000            // how slow shall i boot?
+#define Slowboot            10000            // how slow shall i boot?
 #define Startmode           RL_Standby      // OS shall switch to this after booting
 #define ResetToken          0xAA            // this is for resetting the os in debug
 #define EventBuffer         8              // Length of the internal Event Queue
@@ -141,13 +141,6 @@ extern struct LF_Counter {
 #define LFT_rtc         0
 #define LFT_display     1
 #define LFT_adc         2
-/*
-#pragma romdata system_strings
-extern const rom char modestring[8][11];
-extern const rom char setupstring[5][6][11];
-extern const rom char PWMstring[6][11];
-#pragma romdata
-*/
 
 // Functions in DevelOS.c
     // Initialisation
@@ -178,7 +171,24 @@ void OS_SetRunlevel(unsigned char runlevel);
 int crc16(char* ptr, char len);
 void float2string(char * output, float value);
 
+#pragma romdata system_strings
+extern const rom char sys_string[14][11];     // system strings need to be constant length. 10 bytes plus zero
+#pragma romdata
 
+#define sysstr_void         0x00    //    "          \0",     // empty string with trailing zero
+#define sysstr_develos      0x01    //    "DevelOS \0  ",     // develos 
+#define sysstr_version      0x02    //    "8bit v0.1\0 ",     // develos version 
+#define sysstr_display      0x03    //    "Display: \0 ",     // display
+#define sysstr_flashfs      0x04    //    "FlashFS  \0 ",     // flashfs
+#define sysstr_formating    0x05    //    "formating\0 ",     // formating
+#define sysstr_corrupt      0x06    //    "corrupted!\0",     // corrupt
+#define sysstr_eeprom       0x07    //    "EEPROM : \0 ",     // eeprom
+#define sysstr_used         0x08    //    " Used\0     ",     // used
+#define sysstr_block        0x09    //    "Block \0    ",     // block
+#define sysstr_error        0x0A    //    "Error \0    "      // Error
+#define sysstr_free         0x0B    //    "Free\0      "      // Error
+#define sysstr_lps          0x0C    //    "LPS:\0      "      // lps
+#define sysstr_idle         0x0D    //    "% Idle\0    "      // % idle
 #ifdef	__cplusplus
 }
 #endif
