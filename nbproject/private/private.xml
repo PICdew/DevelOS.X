@@ -6,16 +6,16 @@
         <group>
             <file>file:/C:/Users/Steffi/MPLABXProjects/DevelOS.X/runlevel.c</file>
             <file>file:/C:/Users/Steffi/MPLABXProjects/DevelOS.X/console.c</file>
-            <file>file:/C:/Users/Steffi/MPLABXProjects/DevelOS.X/FlashFS.c</file>
-            <file>file:/C:/Users/Steffi/MPLABXProjects/DevelOS.X/FlashFS.h</file>
+            <file>file:/C:/Users/Steffi/MPLABXProjects/DevelOS.X/nbproject/Makefile-default.mk</file>
             <file>file:/C:/Users/Steffi/MPLABXProjects/DevelOS.X/uart.c</file>
             <file>file:/C:/Users/Steffi/MPLABXProjects/DevelOS.X/DevelOS.h</file>
             <file>file:/C:/Users/Steffi/MPLABXProjects/DevelOS.X/DevelOS.c</file>
             <file>file:/C:/Users/Steffi/MPLABXProjects/DevelOS.X/eeprom.c</file>
             <file>file:/C:/Users/Steffi/MPLABXProjects/DevelOS.X/newmain.c</file>
-            <file>file:/C:/Users/Steffi/MPLABXProjects/DevelOS.X/display.c</file>
-            <file>file:/C:/Users/Steffi/MPLABXProjects/DevelOS.X/console.h</file>
+            <file>file:/C:/Users/Steffi/MPLABXProjects/DevelOS.X/uart.h</file>
             <file>file:/C:/Users/Steffi/MPLABXProjects/DevelOS.X/hardware.h</file>
+            <file>file:/C:/Users/Steffi/MPLABXProjects/DevelOS.X/events.h</file>
+            <file>file:/C:/Users/Steffi/MPLABXProjects/DevelOS.X/lcd_uni.c</file>
         </group>
     </open-files>
 </project-private>

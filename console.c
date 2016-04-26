@@ -33,7 +33,8 @@ void c_pos(const unsigned char x, const unsigned char y)
     }
 }
 
-void c_print(const char* string[])
+
+void c_print(const char* string[])      // this one only works for rom strings!
 {
     char len,byte;
     char buff[CON_width];
@@ -53,7 +54,7 @@ void c_print(const char* string[])
         // wrap at end of line
         if(console.cursor_x >= CON_width)
         {
-            d_cr();
+            c_cr();
         }
         
         // write byte to console buffer
@@ -69,12 +70,12 @@ void c_print(const char* string[])
         }
         else if(byte=='\n')     // on newline: do carriage return, also terminate string
         {
-            d_cr();
+            c_cr();
             byte=0;
         }
         else if(byte=='\r')     // on return: do carriage return, continue string
         {
-            d_cr();
+            c_cr();
         }
     }
 }

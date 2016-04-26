@@ -24,157 +24,11 @@ void InitDisplay(void)
         {
             OS_delay_ns(LCD_E_CYC*2);
         }
-        Display.view_y=LCD.Dimensions.height-1;     // wir sehen immer die untersten zeilen
+        //Display.view_y=console.Buffer[];LCD.Dimensions.height-1;     // wir sehen immer die untersten zeilen
         c_print( "LCDuni\0" );
     #endif
     // alles bereit, ready to go    
     OS.DisplayInitialized=1;
-}
-
-void d_cr(void)
-{
-    char i;
-
-    // shift Display Buffer 1 line
-    for(i=BufferLines-1;i>0;i--)
-    {
-        strncpy( &Display.Buffer[i], Display.Buffer[i-1], 20 );
-    }
-    
-    // clear the new line
-    strncpypgm2ram( &Display.Buffer[0], "                    ", 20 );
-    
-    // set cursor home
-    Display.cursor_x=0;
-    Display.cursor_y=0;
-}
-
-void d_pos(const unsigned char x, const unsigned char y)
-{
-    if(x<20)
-    {
-        Display.cursor_x=x;
-    }
-    if(y<BufferLines)
-    {
-        Display.cursor_y=y;
-    }
-}
-
-void d_print(const char* string[])
-{
-    char len,byte;
-    char buff[20];
-    len=0;
-    byte=0;
-
-    strcpypgm2ram( &buff, string ); //
-    byte=buff[0];
-    while(byte != 0)
-    {
-        // wrap at end of line
-        if(Display.cursor_x>19)
-        {
-            d_cr();
-        }
-        
-        // write byte to display buffer
-        Display.Buffer[Display.cursor_y][Display.cursor_x]=byte;
-        
-        // increment cursor
-        Display.cursor_x++;
-        len++;
-        
-        //read next byte from buffer
-        byte=buff[len];
-        if(byte=='\0')          // on 0x00: string terminated
-        {
-            byte=0;
-        }
-        else if(byte=='\n')     // on newline: do carriage return, also terminate string
-        {
-            d_cr();
-            byte=0;
-        }
-        else if(byte=='\r')
-        {
-            d_cr();
-            byte=' ';
-        }
-    }
-}
-
-void d_clr(void)
-{
-    char x,y;
-    // first, init the internal variables:
-    for(y=0;y<BufferLines;y++)
-    {
-        for(x=0;x<20;x++)
-        {
-            Display.Buffer[y][x]=' ';
-        }
-    }
-    Display.cursor_x=0;
-    Display.cursor_y=0;
-}
-
-void d_value(const unsigned int val)
-{
-    unsigned int value;
-    unsigned char digit,trial;
-    trial=0;
-    digit=0;
-    value=val;
-
-    while(value>=10000)
-    {
-        digit++;
-        value -= 10000;
-    }
-    if(digit>0)
-    {
-        Display.Buffer[Display.cursor_y][Display.cursor_x++]=(unsigned char) 48+digit;
-        trial=1;
-    }
-    digit = 0;
-
-    while(value>=1000)
-    {
-        digit++;
-        value -= 1000;
-    }
-    if(digit>0)
-    {
-        Display.Buffer[Display.cursor_y][Display.cursor_x++]=(unsigned char) 48+digit;
-        trial=1;
-    }
-    digit = 0;
-
-    while(value>=100)
-    {
-        digit++;
-        value -= 100;
-    }
-    if( (digit>0) | trial>0)
-    {
-        Display.Buffer[Display.cursor_y][Display.cursor_x++]=(unsigned char) 48+digit;
-        trial=1;
-    }
-    digit=0;
-
-    while(value>=10)
-    {
-        digit++;
-        value -= 10;
-    }
-    if( (digit>0) | trial>0)
-    {
-        Display.Buffer[Display.cursor_y][Display.cursor_x++]=(unsigned char) 48+digit;
-        trial=1;
-    }
-
-    Display.Buffer[Display.cursor_y][Display.cursor_x++]=(unsigned char) 48+value;
 }
 
 void RefreshDisplay(void)
@@ -196,35 +50,173 @@ void RefreshDisplay(void)
         }
         RefreshLCD();
     #elif defined MOD_Display_LCD_Uni
-        char tmp,start;
-        
-        if(LCDuni_Cols <= CON_width)
-        {
-            // LCD line is shorter than or equal console line
-            tmp = LCDuni_Cols;
-        }
-        else
-        {
-            // LCD line is longer that console line
-            tmp = CON_width;
-        }
-        start = CON_lines - LCDuni_Lines;
         
         if(LCD.Busy == 0)
         {
             for(y=0;y<LCDuni_Lines;y++)
             {
-                strncpy( &LCD.Buffer[y][0], console.Buffer[start+y], tmp );
-                /*for(x=0;x<LCDuni_Cols;x++)
-                {
-                    LCD.Buffer[y][x]=Display.Buffer[Display.view_y-y][Display.view_x+x];        
-                    //LCD.Buffer[y][x]=Display.Buffer[y][x];        
-                    // TODO: Display.view_x should always be 0 for now, this is untested
-                }*/
+                strncpy( LCD.Buffer[y], console.Buffer[y+LCD.viewy], LCDuni_Cols );
+//                for(x=0;x<LCDuni_Cols;x++)
+//                {
+//                    //LCD.Buffer[y][x]=Display.Buffer[Display.view_y-y][Display.view_x+x];        
+//                    //LCD.Buffer[y][x]=console.Buffer[y][x];        
+//                    // TODO: Display.view_x should always be 0 for now, this is untested
+//                }
             }
             RefreshLCD();
+        }
+        else
+        {
+            return;
         }
     #endif /* MOD_Display_<Module> */
 }
 
+// old unused functions
+
+//void d_cr(void)
+//{
+//    char i;
+//
+//    // shift Display Buffer 1 line
+//    for(i=BufferLines-1;i>0;i--)
+//    {
+//        strncpy( &Display.Buffer[i], Display.Buffer[i-1], 20 );
+//    }
+//    
+//    // clear the new line
+//    strncpypgm2ram( &Display.Buffer[0], "                    ", 20 );
+//    
+//    // set cursor home
+//    Display.cursor_x=0;
+//    Display.cursor_y=0;
+//}
+//
+//void d_pos(const unsigned char x, const unsigned char y)
+//{
+//    if(x<20)
+//    {
+//        Display.cursor_x=x;
+//    }
+//    if(y<BufferLines)
+//    {
+//        Display.cursor_y=y;
+//    }
+//}
+//
+//void d_print(const char* string[])
+//{
+//    char len,byte;
+//    char buff[20];
+//    len=0;
+//    byte=0;
+//
+//    strcpypgm2ram( &buff, string ); //
+//    byte=buff[0];
+//    while(byte != 0)
+//    {
+//        // wrap at end of line
+//        if(Display.cursor_x>19)
+//        {
+//            d_cr();
+//        }
+//        
+//        // write byte to display buffer
+//        Display.Buffer[Display.cursor_y][Display.cursor_x]=byte;
+//        
+//        // increment cursor
+//        Display.cursor_x++;
+//        len++;
+//        
+//        //read next byte from buffer
+//        byte=buff[len];
+//        if(byte=='\0')          // on 0x00: string terminated
+//        {
+//            byte=0;
+//        }
+//        else if(byte=='\n')     // on newline: do carriage return, also terminate string
+//        {
+//            d_cr();
+//            byte=0;
+//        }
+//        else if(byte=='\r')
+//        {
+//            d_cr();
+//            byte=' ';
+//        }
+//    }
+//}
+//
+//void d_clr(void)
+//{
+//    char x,y;
+//    // first, init the internal variables:
+//    for(y=0;y<BufferLines;y++)
+//    {
+//        for(x=0;x<20;x++)
+//        {
+//            Display.Buffer[y][x]=' ';
+//        }
+//    }
+//    Display.cursor_x=0;
+//    Display.cursor_y=0;
+//}
+//
+//void d_value(const unsigned int val)
+//{
+//    unsigned int value;
+//    unsigned char digit,trial;
+//    trial=0;
+//    digit=0;
+//    value=val;
+//
+//    while(value>=10000)
+//    {
+//        digit++;
+//        value -= 10000;
+//    }
+//    if(digit>0)
+//    {
+//        Display.Buffer[Display.cursor_y][Display.cursor_x++]=(unsigned char) 48+digit;
+//        trial=1;
+//    }
+//    digit = 0;
+//
+//    while(value>=1000)
+//    {
+//        digit++;
+//        value -= 1000;
+//    }
+//    if(digit>0)
+//    {
+//        Display.Buffer[Display.cursor_y][Display.cursor_x++]=(unsigned char) 48+digit;
+//        trial=1;
+//    }
+//    digit = 0;
+//
+//    while(value>=100)
+//    {
+//        digit++;
+//        value -= 100;
+//    }
+//    if( (digit>0) | trial>0)
+//    {
+//        Display.Buffer[Display.cursor_y][Display.cursor_x++]=(unsigned char) 48+digit;
+//        trial=1;
+//    }
+//    digit=0;
+//
+//    while(value>=10)
+//    {
+//        digit++;
+//        value -= 10;
+//    }
+//    if( (digit>0) | trial>0)
+//    {
+//        Display.Buffer[Display.cursor_y][Display.cursor_x++]=(unsigned char) 48+digit;
+//        trial=1;
+//    }
+//
+//    Display.Buffer[Display.cursor_y][Display.cursor_x++]=(unsigned char) 48+value;
+//}
 #endif /* MOD_Display */

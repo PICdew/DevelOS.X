@@ -1,5 +1,7 @@
 #include "uart.h"
 
+        #ifdef MOD_UART
+
 char setBaud(char cmd)                  // TODO: set new baudrate
 {
 /*    char tmp=0;
@@ -48,23 +50,46 @@ char setBaud(char cmd)                  // TODO: set new baudrate
     }*/
 }
 
-char sendString(const char* string[], char len)
+char sendString(const char string[], char len)
 {
+    char i;
     if(uart.busy == 1)
     {
         return -1;
     }
-    else if(len>TX_BUFF_SIZE)
+    else if(len > TX_BUFF_SIZE)
     {
         return -2;
+    }
+    else if(TXSTAbits.TXEN)
+    {
+        return -3;
     }
     else
     {
         // copy string to tx buffer
-        //strcpy( &uart.tx_buff, string );
+        //strncpy( uart.tx_buff, string, len );
+        for(i=0;i<len;i++)
+        {
+            uart.tx_buff[i]=string[i];
+        }
         uart.busy = 1;
         uart.tx_bytes = len;
-        addEvent(EV_uart_tx, 0);  
+        //PIE1bits.TXIE=1;
+        //TXSTAbits.TXEN=1;
+        return 0;
     }
-    return 0;
+    
 }
+
+void clearBuffTX(void)
+{
+    for(uart.tx_bytes=0; uart.tx_bytes<TX_BUFF_SIZE; uart.tx_bytes++)
+    {
+        uart.tx_buff[uart.tx_bytes]=0;
+    }
+    uart.tx_bytes=0;
+}
+
+#endif 
+

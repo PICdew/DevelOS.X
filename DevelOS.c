@@ -90,10 +90,10 @@ void OS_InitGlobals(void)      // Initialize Global Variables
     ADC_Data.count=15;          // Read internal reference first
     ADC_Data.refvalue=1203000;    // datasheet says 1,2V. this value is for finetuning (in µV)
     
-    for (i=0;i<ISR_LF_Count;i++)
+    for (i=0;i<LF_Count;i++)
     {
-        isr_lf_count[i].Count = 0;
-        isr_lf_count[i].Wait = 0xFFFF;       
+        lf_count[i].count = 0;
+        lf_count[i].wait = 0xFFFF;       
     }
     for (i=0;i<ISR_HF_Count;i++)
     {
@@ -111,18 +111,18 @@ void OS_InitGlobals(void)      // Initialize Global Variables
 #endif
     
 #ifdef MOD_Display
-    for(y=0;y<BufferLines;y++)
-    {
-        for(x=0;x<20;x++)
-        {
-            Display.Buffer[y][x]=' ';
-        }
-    }
-    Display.cursor_x=0;
-    Display.cursor_y=0;
-    Display.view_x=0;
-    Display.view_y=0;
-    Display.light=1;    // if light is only switched, it should be on by default. if dimmed, this should set minimum
+//    for(y=0;y<BufferLines;y++)
+//    {
+//        for(x=0;x<20;x++)
+//        {
+//            Display.Buffer[y][x]=' ';
+//        }
+//    }
+//    Display.cursor_x=0;
+//    Display.cursor_y=0;
+//    Display.view_x=0;
+//    Display.view_y=0;
+//    Display.light=1;    // if light is only switched, it should be on by default. if dimmed, this should set minimum
 #endif /* MOD_Display */
     
 #if defined MOD_UART
@@ -141,10 +141,6 @@ void OS_InitGlobals(void)      // Initialize Global Variables
 #endif /* MOD_UART */
     
 #ifdef MOD_Console
-    for(x=0;x<CMD_Buffer;x++)
-    {
-        console.command[x] = 0;
-    }
     c_clr();
 #endif /* MOD_Console */
 }// </editor-fold>
@@ -186,20 +182,20 @@ void OS_InitChip(void)         // Configure the Hardware Modules
     ANSELHbits.ANS12=1;
     #endif
     
-    // Timer0 as HF counter (rtc etc.)
+    // Timer0 as HF counter 
     T0CONbits.T08BIT = 1;       // 8-bit Mode
     T0CONbits.T0CS = 0;         // Use Fosc
     T0CONbits.T0PS = 0b010;     // Prescaler 1:8
     T0CONbits.PSA = 0;          // Use Prescaler
     T0CONbits.TMR0ON=0;         // Stop Timer0
 
-    // Timer1 as LF counter
-    T1CONbits.T1CKPS=0;         // prescale 1:1
+    // Timer1 as LF counter, dedicated to rtc
     T1CONbits.RD16=1;
-    T1CONbits.T1OSCEN=0;
-    T1CONbits.T1RUN=0;
-    T1CONbits.NOT_T1SYNC=1;
-    T1CONbits.TMR1CS=0;
+    T1CONbits.T1CKPS=3;         // prescale 8:1
+    T1CONbits.T1OSCEN=0;        // don't use external resonator for now
+    T1CONbits.T1RUN=0;          // do not use as clock source
+    T1CONbits.NOT_T1SYNC=1;     // don't use external sync
+    T1CONbits.TMR1CS=0;         // use cpu-clock as source
     T1CONbits.TMR1ON=0;         // Stop Timer1
 
     // external interrupt 0 for ps2-keyboard
@@ -241,7 +237,8 @@ void OS_InitChip(void)         // Configure the Hardware Modules
     TXSTAbits.SYNC=0;           // set usart to async mode
     RCSTAbits.CREN=1;           // enable reciever circuit
     RCSTAbits.SPEN=1;           // enable the module
-    TXSTAbits.TXEN=1;           // enable the transmitter. this will set the interrupt flag
+    //TXSTAbits.TXEN=1;           // enable the transmitter. this will set the interrupt flag
+    //TXREG='M';
     #endif /* MOD_UART */
     
     // configure irq priority
@@ -283,9 +280,9 @@ void OS_InitChip(void)         // Configure the Hardware Modules
     PIE1bits.SSPIE = 1;         // enable I2C interrupt
     #endif /* MOD_FlashFS_extI2C */
     
-    // finally, enable global irqs
-    INTCONbits.GIEH = 1;
-    INTCONbits.GIEL = 1;
+//    // finally, enable global irqs
+//    INTCONbits.GIEH = 1;
+//    INTCONbits.GIEL = 1;
     
 }// </editor-fold>
 
@@ -313,12 +310,12 @@ void InitOS(void)
     OS.runmode=0x00;
     
     // determine CPU clock and define System Timing
-    OS.CPUClock=getCPUClock();
-    OS.Tinst = (1000000 / OS.CPUClock) * 4; // in ns
-    OS.F_Display=2;     // TODO: create an array to store system timings
-    //OS.F_ADC=1;
-    isr_hf_count[EV_HFT_rtc].Wait = ( 1000 * OS.CPUClock / 16 ) / 2048;
-    isr_hf_count[EV_HFT_display].Wait = isr_hf_count[EV_HFT_rtc].Wait / OS.F_Display;
+    
+    OS.F_Display=2;                 // TODO: create an array to store system timings
+    OS.F_ADC=1;                     // use floats for timings to enable refresh rates < 1 / second
+    setTiming();
+//    isr_hf_count[EV_HFT_rtc].Wait = ( 1000 * OS.CPUClock / 16 ) / 2048;
+//    isr_hf_count[EV_HFT_display].Wait = isr_hf_count[EV_HFT_rtc].Wait / OS.F_Display;
 
     // clear timing counters
     OS.FPS=0;
@@ -348,10 +345,25 @@ void InitOS(void)
     // OS should be in ready state now
     OS.isInitialized=1;
 
-    // Now start the Timers
-    T0CONbits.TMR0ON=1;     // Start Timer0
-    T1CONbits.TMR1ON=1;     // Start Timer1
 }// </editor-fold>
+
+void setTiming(void)
+{
+    unsigned long temp;
+    float f_temp;
+    
+    OS.CPUClock=getCPUClock();
+    temp = (OS.CPUClock ) / 4;      // instructions per millisecond
+    temp = temp / 1000;             // instructions per microsecond
+    f_temp= 1 / ((float) temp);     // microseconds per instruction
+    OS.Tinst = 1000 * f_temp;       // nanoseconds per instruction //(1000000 / OS.CPUClock) * 4; // in ns
+    
+    // TODO: derive these from OS.CPUClock to enable clock switching
+    temp = OS.CPUClock / 8000;
+    lf_count[LFT_rtc].wait = temp;      // postscale for rtc
+    lf_count[LFT_display].wait = lf_count[LFT_rtc].wait / OS.F_Display;
+    lf_count[LFT_adc].wait = lf_count[LFT_rtc].wait / OS.F_ADC;
+}
 
 // <editor-fold defaultstate="collapsed" desc="unsigned char addEvent(const unsigned char type, const unsigned int data)">
 unsigned char addEvent(const unsigned char type, const unsigned int data)
@@ -369,18 +381,26 @@ unsigned char addEvent(const unsigned char type, const unsigned int data)
 // <editor-fold defaultstate="collapsed" desc="void delEvent(void)">
 void delEvent(void)
 {
-    // just rotate the buffer by one, then set the last one zero
+    /**********************************************************\
+     * This Function rotates the Event Buffer.                *
+     *                                                        *
+     * TODO: Leave the Buffer static, and just have counters  *
+     *          controlling where to read the current event,  *
+     *          where to put new events and so on. this would *
+     *          save lots of processor time                   *
+    \**********************************************************/
     char i;
-
-    for(i=0;i<EventBuffer-1;i++)
+    if(OS.numEvents>0)       
     {
-        OS.Event[i].eventType=OS.Event[i+1].eventType;
-        OS.Event[i].eventData=OS.Event[i+1].eventData;
-    }
-    OS.Event[EventBuffer-1].eventType=EV_Null;
-    OS.Event[EventBuffer-1].eventData=0;
-    if(OS.numEvents>0)
+        for(i=0; i<EventBuffer-1; i++)
+        {
+            OS.Event[i].eventType=OS.Event[i+1].eventType;
+            OS.Event[i].eventData=OS.Event[i+1].eventData;
+        }
+        OS.Event[EventBuffer-1].eventType=EV_Null;
+        OS.Event[EventBuffer-1].eventData=0;
         OS.numEvents--;
+    }
 }// </editor-fold>
 
 // <editor-fold defaultstate="collapsed" desc="void OS_Event(void)">
@@ -435,25 +455,48 @@ void OS_Event(void)
             break;//</editor-fold>
             
         case EV_LF_Timer:   // <editor-fold defaultstate="collapsed" desc="EV_LF_Timer">
+            
             switch(OS.Event[0].eventData)
             {
-                default:
-                    delEvent();
+                case EV_LFT_count:
+                    for(temp=0; temp<LF_Count;temp++)
+                    {
+                        lf_count[temp].count++;
+                        if( lf_count[temp].count > lf_count[temp].wait)
+                        {
+                            addEvent(EV_LF_Timer, ( temp + EV_LFT_rtc));
+                            lf_count[temp].count=0;
+                        }
+                    }
+                  //  delEvent();
+                    break;
+                case EV_LFT_rtc:     // rtc
+                //    delEvent();
+                    addEvent( EV_rtc, 0);
+                    break;
+                case EV_LFT_display:         // display
+                   // delEvent();
+                    addEvent( EV_Display, 0);
+                    break;
+                default:    // HF-Timer ?
+              //      delEvent();
                     break;
             }
+            //addEvent(EV_rtc, 0);
+            delEvent();
             break;//</editor-fold>
             
         case EV_HF_Timer:   // <editor-fold defaultstate="collapsed" desc="EV_HF_Timer">
             switch(OS.Event[0].eventData)
             {
-                case EV_HFT_rtc:     // rtc
-                    delEvent();
-                    addEvent( EV_rtc, 0);
-                    break;
-                case EV_HFT_display:         // display
-                    delEvent();
-                    addEvent( EV_Display, 0);
-                    break;
+//                case EV_HFT_rtc:     // rtc
+//                    delEvent();
+//                    //addEvent( EV_rtc, 0);
+//                    break;
+//                case EV_HFT_display:         // display
+//                    delEvent();
+//                    //addEvent( EV_Display, 0);
+//                    break;
                 case 2:     // HF-Timer 2
                     break;
                 case 3:     // HF-Timer 3
@@ -518,9 +561,10 @@ void OS_Event(void)
             
         case EV_Error:      // <editor-fold defaultstate="collapsed" desc="EV_Error">
             // do something about it
-            d_print("Error \0");
-            d_value(OS.Event[0].eventData);
-            d_print("\n\0");
+            c_print("Error \0");
+            c_value(OS.Event[0].eventData);
+            c_print("\n\0");
+            // TODO: we might want to send errors directly to uart or something
             /*while(OS.Event[0].eventType == EV_Error)
             {
                 delEvent();
@@ -534,6 +578,8 @@ void OS_Event(void)
             {
                 case EV_E_uart_frame:
                     // recieve frame error
+                    // as i have read somewhere, 
+                    // these can be used for clock tuning somehow
                     break;
                 case EV_E_uart_of:
                     // buffer overflow
@@ -586,24 +632,10 @@ void OS_Event(void)
             
         case EV_uart_tx:    // <editor-fold defaultstate="collapsed" desc="EV_uart_tx">
             #ifdef MOD_UART
-            // transmitted byte
-            if( uart.tx_bytes > 0 )
-            {
-                // send next byte
-                TXREG = uart.tx_buff[TX_BUFF_SIZE-uart.tx_bytes];
-                TXSTAbits.TXEN=1;
-                uart.tx_bytes--;
-            }
-            else
-            {
-                // no more bytes to send
-                // clear buffer
-                uart.tx_bytes=0;
-                for(temp=0;temp<TX_BUFF_SIZE;temp++)
-                {
-                    uart.tx_buff[temp] = 0;
-                }
-            }
+            // no more bytes to send
+            // clear buffer
+            uart.busy = 0;
+            clearBuffTX();
             delEvent();
             #else   /* MOD_UART */
             addEvent(EV_Error, EV_E_EVinv);
@@ -625,21 +657,6 @@ void ScanADC(void)
     ADC_Data.count=0;
     ADCON0bits.CHS=ADC_Data.count;
     ADCON0bits.GO=1;
-}// </editor-fold>
-
-// <editor-fold defaultstate="collapsed" desc="unsigned long reflect (unsigned long crc, int bitnum)">
-unsigned long reflect (unsigned long crc, int bitnum)
-{
-
-	// reflects the lower 'bitnum' bits of 'crc'
-
-	unsigned long i, j=1, crcout=0;
-
-	for (i=(unsigned long)1<<(bitnum-1); i; i>>=1) {
-		if (crc & i) crcout|=j;
-		j<<= 1;
-	}
-	return (crcout);
 }// </editor-fold>
 
 // <editor-fold defaultstate="collapsed" desc="int crc16(char* ptr, char len)">
@@ -672,40 +689,70 @@ int crc16(char* ptr, char len)
 // <editor-fold defaultstate="collapsed" desc="void OS_SetRunlevel(unsigned char runlevel)">
 void OS_SetRunlevel(unsigned char runlevel)
 {
-    switch(OS.runlevel)                                                         // Do Exit stuff (cleanup, carry, ...)
+    switch(OS.runlevel)             // Do Exit stuff (cleanup, carry, ...)
     {
-        case RL_ROM_Stat:
+        case RL_ROM_Stat:       
+            // <editor-fold defaultstate="collapsed" desc="RL_ROM_Stat">
             OS.runmode=60;
             OS.submode=0;
+            // </editor-fold>
             break;
         case RL_TestKeypad:
+            // <editor-fold defaultstate="collapsed" desc="RL_TestKeypad">
             OS.runmode=20;
             runlevel=RL_Setup;
+            // </editor-fold>
+            break;
+        case RL_Boot:
+            // <editor-fold defaultstate="collapsed" desc="RL_Boot">
+            // done booting. first, clear the console
+            c_clr();    // maybe the contents could be saved somewhere as boot log
+            
+            // Now start the Timers
+            T0CONbits.TMR0ON=1;     // Start Timer0
+            T1CONbits.TMR1ON=1;     // Start Timer1
+            
+            // finally, enable global irqs
+            INTCONbits.GIEH = 1;
+            INTCONbits.GIEL = 1;
+            // </editor-fold>
             break;
         default:
+            // invalid runlevel should cause an error message
             OS.runmode=0;
             OS.submode=0;
             break;
     }
 
-    OS.prev_runlevel=OS.runlevel;
+    OS.prev_runlevel=OS.runlevel;   // prev_runlevel might be unnecessary
     OS.runlevel=runlevel;
 
-    switch(OS.runlevel)                                                         // Do Entry stuff (init, SFR's, ...)
+    switch(OS.runlevel)             // Do Entry stuff (init, SFR's, ...)
     {
         default:
-            d_clr();
+            //d_clr();
             break;
     }
 }// </editor-fold>
 
 // <editor-fold defaultstate="collapsed" desc="void OS_delay_ns(unsigned long nanoseconds)">
-void OS_delay_ns(unsigned long nanoseconds)
+/********************************************************\
+ * Delay at least the specified number of nanoseconds   *
+ *                                                      *
+ * The overhead has to be finetuned for each processor  *
+ * TODO: put the constants into #defines                *
+\********************************************************/
+void OS_delay_ns(unsigned int nanoseconds)
 {
-    unsigned long temp,loop;
-    loop = 2 * OS.Tinst;    // 2* Tinst per loop, check, substract
+    //unsigned long loop;
+    long temp,loop;
+    
+    // 26 * Tinst per loop, check, substract. find this with disassembly
+    loop = 26 * OS.Tinst;    
     temp = nanoseconds ;
-  //  temp -= (3*loop);
+    
+    // substract overhead for this preparation
+    temp -= (95*OS.Tinst);
     
     while(temp>loop)
     {
@@ -713,8 +760,51 @@ void OS_delay_ns(unsigned long nanoseconds)
     }
 }// </editor-fold>
 
+// <editor-fold defaultstate="collapsed" desc="void OS_delay_us(unsigned long microseconds)">
+/********************************************************\
+ * Delay at least the specified number of microseconds  *
+ *                                                      *
+ * The overhead has to be finetuned for each processor  *
+ * TODO: put the constants into #defines                *
+\********************************************************/
+void OS_delay_us(unsigned int microseconds)
+{
+    long temp,loop;
+    
+    // 26 * Tinst per loop, check, substract. find this with disassembly
+    loop = 26 * OS.Tinst;    
+    temp = microseconds * 1000;
+    
+    // substract overhead for this preparation
+    temp -= (108*OS.Tinst);
+    
+    while(temp > loop)
+    {
+        temp -= loop;
+    }
+}// </editor-fold>
+
+// <editor-fold defaultstate="collapsed" desc="void OS_delay_ms(unsigned long milliseconds)">
+void OS_delay_ms(unsigned int milliseconds)
+{
+    unsigned int i;
+    for(i=0; i<milliseconds; i++)
+    {
+        OS_delay_us(1000);
+    }
+}// </editor-fold>
+
 // <editor-fold defaultstate="collapsed" desc="void ConvertVoltages(void)">
-void ConvertVoltages(void)  // Convert ADC-Values to actual Voltage Levels
+/****************************************************\
+ *  Convert ADC-Values to actual Voltage Levels     *
+ *                                                  *
+ * TODO: take the voltage levels out of the OS      *
+ *          and store them inside the ADC struct    *
+ *          also, put this function in separate     *
+ *          source file for the ADC module          *
+ *          change the constants to #defines        *
+\****************************************************/
+void ConvertVoltages(void)  
 {
     unsigned long temp,tmp1,tmp2,tmp3;
 
@@ -734,7 +824,6 @@ void ConvertVoltages(void)  // Convert ADC-Values to actual Voltage Levels
     OS.U12V=temp/1000;                                      // in mV
 
     temp=0;
-//    T0counters.RTCWait = (OS.CPUClock /4) /64;
 }// </editor-fold>
 
 // <editor-fold defaultstate="collapsed" desc="unsigned int getCPUClock(void)">
@@ -780,16 +869,14 @@ unsigned long getCPUClock(void)
     return temp;
 }// </editor-fold>
 
-// <editor-fold defaultstate="collapsed" desc="void Wait1S(void)">
-void Wait1S(void)           // Do Nothing
+// <editor-fold defaultstate="collapsed" desc="void OS_delay_1S(void)">
+void OS_delay_1S(void)           // Do Nothing
 {
-   Delay10KTCYx(250);
-   Delay10KTCYx(250);
-   Delay10KTCYx(250);
-   Delay10KTCYx(250);
-   Delay10KTCYx(250);
-   Delay10KTCYx(250);
-
+    int i;
+    for(i=0;i<Slowboot;i++)
+    {
+        OS_delay_us(10000);
+    }
 }// </editor-fold>
 
 // <editor-fold defaultstate="collapsed" desc="void float2string(char * output, float value)">
@@ -835,8 +922,8 @@ void float2string(char * output, float value)
     }
 }// </editor-fold>
 
-/*
 // <editor-fold defaultstate="collapsed" desc="#pragma romdata system_strings">
+/*
 #pragma romdata system_strings
 const rom char setupstring[5][6][11]={
 
@@ -893,6 +980,6 @@ const rom char PWMstring[6][11]={
     "CH2 P     \n",
     "+ PRESET +\n",
     "   EXIT   \n"
-};
+};*/
+
 // </editor-fold>
-*/

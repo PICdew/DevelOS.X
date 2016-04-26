@@ -246,18 +246,18 @@ void InitEEPROM(void)
 
     //Flash.eprom.FreeBlocks=0;
 
-    d_print("LESE EPROM\n");
+    //d_print("LESE EPROM\n");
     //VFLD.Symbol[VFLD_CN2]=1;
-    RefreshDisplay();
+    //RefreshDisplay();
 
     for(i=0;i<EE_Blocks;i++)
     {
         Flash.eprom.Block[i].adress=i*EE_Blocksize;
         Flash.eprom.Block[i].signature=EE_read_byte(Flash.eprom.Block[i].adress + (EE_Blocksize-1) ) ;
-        if(Flash.eprom.Block[i].signature==0xAA | Flash.eprom.Block[i].signature == 0xFF)
-        {
-            //Flash.eprom.FreeBlocks++;
-        }
+//        if(Flash.eprom.Block[i].signature==0xAA | Flash.eprom.Block[i].signature == 0xFF)
+//        {
+//            //Flash.eprom.FreeBlocks++;
+//        }
         //Flash.eprom.Block[i].used=EE_read_byte(Flash.eprom.Block[i].adress + (EE_Blocksize-2) ) ;
     }
 }// </editor-fold>

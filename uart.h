@@ -14,19 +14,22 @@
 extern "C" {
 #endif
     
+#ifdef MOD_UART    
+    
 #pragma udata UART                          // uart data
-extern struct UART_DATA {
+extern volatile struct UART_DATA {
     unsigned char rx_buff[RX_BUFF_SIZE];    // uart recieve buffer, =max cmd length
-    unsigned char tx_buff[TX_BUFF_SIZE];    // uart transmit buffer
+    volatile unsigned char tx_buff[TX_BUFF_SIZE];    // uart transmit buffer
     unsigned char rx_bytes;                 // rx counter
-    unsigned char tx_bytes;                 // tx counter
+    volatile unsigned char tx_bytes;                 // tx counter
     unsigned char baud;                     // baudrate
     unsigned char busy;
     } uart;
 #pragma udata
 
 char setBaud(char cmd);
-char sendString(const char* string[],char len);
+char sendString(const char string[],char len);
+void clearBuffTX(void);
 
     // (53332) -> 300 baud @ 64 MHz
 #define BAUD_H__300      0b11010000
@@ -69,6 +72,7 @@ static const rom char BAUD[8][3]={
 };*/        // Baudrates
 #pragma romdata
 
+#endif /* MOD_UART */
 #ifdef	__cplusplus
 }
 #endif

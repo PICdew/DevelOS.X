@@ -28,15 +28,17 @@ extern "C" {
 #define COUNT 9
 #define REFval 10
 
-#define BOOT_SLOW                           // This will add some delays to the startup process
+//#define BOOT_SLOW                           // This will add some delays to the startup process
+#define Slowboot            5000            // how slow shall i boot?
 #define Startmode           RL_Standby      // OS shall switch to this after booting
 #define ResetToken          0xAA            // this is for resetting the os in debug
-#define EventBuffer         32              // Length of the internal Event Queue
-#define ISR_LF_Count        2               // Number of LF-Counters for the ISR-Routine. 
-                                            // These are like programmable software-timers, running at (Fosc / 4) /64k
+#define EventBuffer         8              // Length of the internal Event Queue
+#define LF_Count            3               // Number of LF-Counters 
+                                            // These are like programmable software-timers, running at 32 Hz
 #define ISR_HF_Count        2               // Number of HF-Counters for the ISR-Routine. 
                                             // These are like programmable software-timers, running at (Fosc / 4) /256
-/* Remember: The high priority ISR will go through a loop for the HF and LF Count. So it is important to keep these numbers as low as possible */
+/* Remember: The high priority ISR will go through a loop for the HF Count. 
+ * So it is important to keep that number as low as possible */
 
 #pragma udata OS_Data    
 extern struct OS_State {        
@@ -124,11 +126,21 @@ extern volatile struct ADC_State {
 
 #pragma udata ISR_Count
 extern volatile struct Counter {
-    volatile unsigned int                Count;
-    volatile unsigned int                Wait;
-} isr_lf_count[ISR_LF_Count], isr_hf_count[ISR_HF_Count];
+    volatile unsigned int       Count;
+    volatile unsigned int       Wait;
+} isr_hf_count[ISR_HF_Count];
 #pragma udata
 
+#pragma udata LF_COUNT
+extern struct LF_Counter {
+    unsigned int                count;
+    unsigned int                wait;
+} lf_count[LF_Count];
+#pragma udata
+
+#define LFT_rtc         0
+#define LFT_display     1
+#define LFT_adc         2
 /*
 #pragma romdata system_strings
 extern const rom char modestring[8][11];
@@ -138,20 +150,29 @@ extern const rom char PWMstring[6][11];
 */
 
 // Functions in DevelOS.c
+    // Initialisation
 void OS_HandleReset(void);
 void OS_InitGlobals(void);
 void OS_InitChip(void);
 void InitOS(void);
 
-void OS_Event(void);
-void OS_delay_ns(unsigned long nanoseconds);
-unsigned long getCPUClock(void);
-unsigned long reflect (unsigned long crc, int bitnum) ;
-void Wait1S(void);
-void ConvertVoltages(void);
-
+    // Event Handling
 unsigned char addEvent(const unsigned char type, const unsigned int data);
 void delEvent(void);
+void OS_Event(void);
+
+    // delays
+void OS_delay_ns(unsigned int nanoseconds);
+void OS_delay_us(unsigned int microseconds);
+void OS_delay_ms(unsigned int milliseconds);
+void OS_delay_1S(void);
+
+    // timing control
+unsigned long getCPUClock(void);
+void setTiming(void);
+
+    // others
+void ConvertVoltages(void);
 void ScanADC(void);
 void OS_SetRunlevel(unsigned char runlevel);
 int crc16(char* ptr, char len);

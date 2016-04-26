@@ -46,6 +46,7 @@ extern "C" {
             unsigned char width;
             unsigned char height;
         } Dimensions;
+        char viewy;
         char Busy;                                                              // set this while writing to the lcd, to block any writes to buffer
         char Light;                                                             // for led-backlight
     } LCD;              // a buffer for a 4x20 LCD
@@ -71,9 +72,9 @@ extern const rom unsigned char LCD_Command[8];                                  
     #define LCD_CMD_sca     6   // CMD 6    :   Set CG-RAM Address. OR in the address
     #define LCD_CMD_sda     7   // CMD 7    :   Set DD-RAM Address. OR in the address
     // defines for the LCD Timings
-    #define LCD_PON_1       40000000    // Power on Delay (40 ms)
-    #define LCD_PON_2       4100000     // Reset Delay (4.1 ms))
-    #define LCD_PON_3       100000      // Init Delay (100 µs)
+    #define LCD_PON_1       40000    // Power on Delay (40 ms)
+    #define LCD_PON_2       4100     // Reset Delay (4.1 ms))
+    #define LCD_PON_3       100      // Init Delay (100 µs)
     #define LCD_E_CYC       400         // Min LCD Enable Cycle Time /2 in ns
     #define LCD_T_AS        100         // Adress setup time
     #define LCD_T_DSW       100         // Data setup Time

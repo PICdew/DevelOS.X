@@ -39,9 +39,10 @@ extern "C" {
 #define EV_HF_Timer     0xF1    // data = timer-number
 #define EV_Error        0xFF    // data = errorcode
 
-    // HF-Timer SubEvents
-#define EV_HFT_rtc      0x00    // increment rtc
-#define EV_HFT_display  0x01    // redraw display
+    // LF-Timer SubEvents
+#define EV_LFT_count    0x01    // count the counters
+#define EV_LFT_rtc      0x02    // increment rtc
+#define EV_LFT_display  0x03    // redraw display
 
     // Error Codes
     // UART Error Codes
@@ -50,12 +51,12 @@ extern "C" {
 #define EV_E_uart_iof   0x03    // internal buffer overflow
     
     // OS Error Codes
-#define EV_E_RLinv      0x01    // invalid runlevel
-#define EV_E_EVinv      0x02    // unhandled Event
+#define EV_E_RLinv      0x04    // invalid runlevel
+#define EV_E_EVinv      0x05    // unhandled Event
     
     // I2C Error Codes
-#define EV_i2cerr_of    0x01    // Overflow error
-#define EV_i2cerr_wc    0x02    // write collission
+#define EV_i2cerr_of    0x06    // Overflow error
+#define EV_i2cerr_wc    0x07    // write collission
     
 
     

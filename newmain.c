@@ -15,19 +15,20 @@
  */
 
 // <editor-fold defaultstate="collapsed" desc="Global Variable Definitions">
-//#pragma udata OS_Counters
-//volatile struct Counters T0counters;
 #pragma udata OS_Data
 struct OS_State OS;
 #pragma udata AD_Data
 volatile struct ADC_State ADC_Data;
 #pragma udata ISR_Count
-volatile struct Counter isr_lf_count[ISR_LF_Count], isr_hf_count[ISR_HF_Count];
+volatile struct Counter isr_hf_count[ISR_HF_Count];
+#pragma udata LF_COUNT
+struct LF_Counter lf_count[LF_Count];
 #pragma udata
+
 #if defined MOD_Display
-    #pragma udata TextBuffer
-    struct Disp Display;
-    #pragma udata HardBuffer
+//    #pragma udata TextBuffer
+//    struct Disp Display;
+//    #pragma udata HardBuffer
 
     #if defined MOD_Display_VFLD
         struct VF_Display VFLD;
@@ -81,7 +82,7 @@ volatile struct Counter isr_lf_count[ISR_LF_Count], isr_hf_count[ISR_HF_Count];
 
 #if defined MOD_UART
 #pragma udata UART                          // uart data
-struct UART_DATA uart;
+volatile struct UART_DATA uart;
 #pragma udata
 #endif /* MOD_UART */
 
@@ -96,13 +97,15 @@ struct CONSOLE console;
  * Here come the service routines for IRQs:
  */
 // <editor-fold defaultstate="collapsed" desc="Interrupt Service Routines">
+
+        // <editor-fold defaultstate="collapsed" desc="High Priority">
 #pragma code high_vector=0x08
 void high_vector (void)
 {
     _asm GOTO High_ISR _endasm
 }
 #pragma code
-#pragma interrupt High_ISR nosave=section("ISR_Count")
+#pragma interrupt High_ISR nosave=section("ISR_Count"), section("UART")
 void High_ISR(void)         
 {
     char i;
@@ -125,25 +128,20 @@ void High_ISR(void)
         INTCONbits.TMR0IE = 1;      //irq enable
     } // </editor-fold>
 
-    if(PIR1bits.TMR1IF)         // <editor-fold defaultstate="collapsed" desc="Timer 1 (LF Timer)">
+    else if(PIR1bits.TMR1IF)    // <editor-fold defaultstate="collapsed" desc="Timer 1 (LF Timer)">
     {
-        PIR1bits.TMR1IF=0;
-        for(i=0; i<ISR_LF_Count;i++)
-        {
-            if(isr_lf_count[i].Count++ > isr_lf_count[i].Wait)
-            {
-                if(OS.isInitialized==1)
-                {
-                    addEvent(EV_LF_Timer, i);
-                }
-                isr_lf_count[i].Count=0;
-            }
-        }
-
-        PIE1bits.TMR1IE = 1;    
+        PIR1bits.TMR1IF=0;          // clear interrupt flag
+        T1CONbits.TMR1ON=0;         // Stop Timer1
+        // send Event to OS
+        addEvent(EV_LF_Timer, EV_LFT_count);
+        // preload the timer
+        TMR1H = T1_preload_h;
+        TMR1L = T1_preload_l;
+        T1CONbits.TMR1ON=1;         // Start Timer1
+        PIE1bits.TMR1IE = 1;        // enable interrupt
     } // </editor-fold>
     
-    if(INTCONbits.INT0IF)       // <editor-fold defaultstate="collapsed" desc="Ext INT 0">
+    else if(INTCONbits.INT0IF)  // <editor-fold defaultstate="collapsed" desc="Ext INT 0">
     {
         INTCONbits.INT0IF=0;
         // Bit einlesen & zählen
@@ -177,16 +175,68 @@ void High_ISR(void)
 #endif
         INTCONbits.INT0IE=1;
     } // </editor-fold>
+    
+    else if(PIR1bits.RCIF)      // <editor-fold defaultstate="collapsed" desc="UART rx">
+    {
+                PIR1bits.RCIF=0;
 
-    INTCONbits.GIEH =1;
+        #ifdef MOD_UART
+
+        if(RCSTAbits.FERR)
+        {
+            addEvent(EV_uart_error, EV_E_uart_frame);
+            //tmp=RCREG;
+        }else if(RCSTAbits.OERR)
+        {
+            addEvent(EV_uart_error, EV_E_uart_of);
+            //tmp=RCREG;
+        }else{
+            //tmp=RCREG;
+            addEvent(EV_uart_rx, RCREG);
+            #ifdef UART_echo
+            //TXREG=tmp;
+            //TXSTAbits.TXEN=1;
+            #endif /* UART_echo */
+        }
+        #endif /* MOD_UART */        
+
+        //PIE1bits.RCIE=1;
+    } // </editor-fold>
+    
+    else if(PIR1bits.TXIF)      // <editor-fold defaultstate="collapsed" desc="UART tx">
+    {
+        PIR1bits.TXIF=0;
+#ifdef MOD_UART
+        if(uart.tx_bytes>0)
+        {
+           uart.tx_bytes--;
+           TXREG=uart.tx_buff[uart.tx_bytes];
+        }
+        else if(TXSTAbits.TRMT)
+        {
+                TXSTAbits.TXEN=0;
+                //PIE1bits.TXIE=0;
+                addEvent(EV_uart_tx, 0);
+        }
+//        else if(TXSTAbits.TRMT)
+//        {
+//            TXSTAbits.TXEN=0;
+//        }
+#endif /* MOD_UART */        
+    } // </editor-fold>
+    
+    //INTCONbits.GIEH =1;
 }
+// </editor-fold>
+
+        // <editor-fold defaultstate="collapsed" desc="Low Priority">
 #pragma code low_vector=0x18
 void low_vector (void)
 {
     _asm GOTO Low_ISR _endasm
 }
 #pragma code
-#pragma interruptlow Low_ISR 
+#pragma interruptlow Low_ISR nosave=section("UART")
 void Low_ISR(void)     
 {
     unsigned int temp;
@@ -202,43 +252,11 @@ void Low_ISR(void)
         PIE1bits.ADIE=1;                        //  Enable IRQ
     } // </editor-fold>
     
-    if(PIR1bits.RCIF)       // <editor-fold defaultstate="collapsed" desc="UART rx">
-    {
-        PIR1bits.RCIF=0;
-        if(RCSTAbits.FERR)
-        {
-            addEvent(EV_uart_error, EV_E_uart_frame);
-            tmp=RCREG;
-        }else if(RCSTAbits.OERR)
-        {
-            addEvent(EV_uart_error, EV_E_uart_of);
-            tmp=RCREG;
-        }else{
-            tmp=RCREG;
-            addEvent(EV_uart_rx, tmp);
-            #ifdef UART_echo
-            TXREG=tmp;
-            TXSTAbits.TXEN=1;
-            #endif /* UART_echo */
-        }
-        PIE1bits.RCIE=1;
-    } // </editor-fold>
-    
-    if(PIR1bits.TXIF)       // <editor-fold defaultstate="collapsed" desc="UART tx">
-    {
-        PIR1bits.TXIF=0;
-        addEvent(EV_uart_tx, 0);
-        if(TXSTAbits.TRMT)
-        {
-            TXSTAbits.TXEN=0;
-        }
-        PIE1bits.TXIE=1;
-    } // </editor-fold>
-    
-    INTCONbits.GIEL =1;
+    //INTCONbits.GIEL =1;
 }
 // </editor-fold>
 
+// </editor-fold>
 
 /*
  * Time to do something!
@@ -282,7 +300,7 @@ void main(void)
                         // <editor-fold defaultstate="collapsed" desc="RL_Boot_Display"> 
                         c_print("DevelOS: 8bit v0.1\0");
                         c_cr();
-                        // Display Init
+                        //Display Init
                         c_print("Display: \0");
                         InitDisplay();
                         c_cr();
@@ -295,7 +313,7 @@ void main(void)
                         // Init FlashFS
                         #ifdef MOD_FlashFS
                             #ifdef BOOT_SLOW 
-                                OS_delay_ns(10000000);
+                            OS_delay_1S();
                             #endif
                             c_print("FlashFS: \0");
                             err = InitFlash();
@@ -345,7 +363,7 @@ void main(void)
                             {
                                 case EE_sig_FlashFS:
                                     #ifdef BOOT_SLOW
-                                    OS_delay_ns(10000000);
+                                    OS_delay_1S();
                                     #endif /* BOOT_SLOW */
                                     c_print("FlashFS at \0");
                                     c_value(i);
@@ -354,7 +372,7 @@ void main(void)
                                 case EE_sig_System:
                                     // This holds all the static settings for the OS
                                     #ifdef BOOT_SLOW
-                                    OS_delay_ns(10000000);
+                                    OS_delay_1S();
                                     #endif /* BOOT_SLOW */
                                     c_print("DevelOS at \0");
                                     c_value(i);
@@ -388,10 +406,10 @@ void main(void)
                         {
                             // After Booting the OS, switch to runlevel defined in DevelOS.h
                             #ifdef BOOT_SLOW
-                            OS_delay_ns(10000000);
+                            OS_delay_1S();
                             #endif /* BOOT_SLOW */
                             OS_SetRunlevel(Startmode);
-                            d_clr();
+                            //d_clr();
                             addEvent(EV_Display, 0);
                         }
                         else

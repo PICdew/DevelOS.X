@@ -6,25 +6,37 @@ void DoStandby(void)
     // Just show uptime and clock. 
     // TODO: Try to reduce the core clock in this mode to save energy
     // But beware: so far this has always messed up everything
-    unsigned char temp,tempx;
-    unsigned char strbuff[3];
-    unsigned char tmp[20]="Up: ";
+//    unsigned char temp,tempx;
+    unsigned char strbuff[10];
+    unsigned char rtcstr[12];
+    char i;
+    //unsigned char tmp[14]="\0";
+    memset( &strbuff, 0, sizeof( strbuff ));
+    //memset( &console.Buffer[1], 0x20, CON_width);
     //temp=Display.cursor_y;
     //tempx=Display.cursor_x;
     
-    sprintf( &strbuff, "%u02", rtc.hour);
-    strcat(&tmp, strbuff);
-    strcat(tmp, ":");
-    sprintf( &strbuff, "%u02", rtc.mins);
-    strcat(&tmp, strbuff);
-    strcat(&tmp, ":");
-    sprintf( &strbuff, "%u02", rtc.secs);
-    strcat(&tmp, strbuff);
-    strcat(&tmp, "   ");
-    sprintf( &strbuff, "%u02", (OS.CPUClock/1000) );
-    strcat(&tmp, " MHz");
-    c_print(tmp);
-    //temp = sendString("TEST\0",4);
+    sprintf( strbuff, "%.2u", rtc.hour);
+    strncpy( rtcstr, strbuff, 2);
+    rtcstr[2]=':';
+    sprintf( strbuff, "%.2u", rtc.mins);
+    strncpy( rtcstr+3, strbuff, 2);
+    rtcstr[5]=':';
+    sprintf( strbuff, "%.2u", rtc.secs);
+    strncpy( rtcstr+6, strbuff, 2);
+    
+    for(i=0;i<CON_width;i++)
+    {
+        console.Buffer[1][i]=' ';
+    }
+    for(i=6;i<14;i++)
+    {
+        console.Buffer[1][i]=rtcstr[i-6];
+    }
+    for(i=14; i<20; i++)
+    {
+        console.Buffer[1][i]=' ';
+    }
 }
 // </editor-fold>
 
@@ -52,8 +64,8 @@ void DoSlideshow(void)
             }
             break;
         case 2:
-            Wait1S();
-            Wait1S();
+            OS_delay_1S();
+            OS_delay_1S();
             OS.submode++;
             break;
         case 3:
@@ -74,8 +86,8 @@ void DoSlideshow(void)
             }
             break;
         case 5:
-            Wait1S();
-            Wait1S();
+            OS_delay_1S();
+            OS_delay_1S();
             OS.submode++;
             break;
         case 6:
@@ -96,8 +108,8 @@ void DoSlideshow(void)
             }
             break;
         case 8:
-            Wait1S();
-            Wait1S();
+            OS_delay_1S();
+            OS_delay_1S();
             OS.submode++;
             break;
         case 9:
@@ -117,8 +129,8 @@ void DoSlideshow(void)
             }
             break;
         case 11:
-            Wait1S();
-            Wait1S();
+            OS_delay_1S();
+            OS_delay_1S();
             OS.submode=0;
             break;
     }
@@ -128,28 +140,28 @@ void DoSlideshow(void)
 // <editor-fold defaultstate="collapsed" desc="RL_3v3          0x03">
 void Show3v3(void)
 {
-    d_print("+ 3,3     \n");
-    //VFLD.Symbol[VFLD_CN2]=1;
-    //VFLD.Symbol[VFLD_DEC]=1;
-    d_value(OS.U3V3/10);
+//    d_print("+ 3,3     \n");
+//    //VFLD.Symbol[VFLD_CN2]=1;
+//    //VFLD.Symbol[VFLD_DEC]=1;
+//    d_value(OS.U3V3/10);
 }// </editor-fold>
 
 // <editor-fold defaultstate="collapsed" desc="RL_5v           0x04">
 void Show5v(void)
 {
-    d_print("+ 5,0     \n");
-    //VFLD.Symbol[VFLD_CN2]=1;
-    //VFLD.Symbol[VFLD_DEC]=1;
-    d_value(OS.U5V0/10);
+//    d_print("+ 5,0     \n");
+//    //VFLD.Symbol[VFLD_CN2]=1;
+//    //VFLD.Symbol[VFLD_DEC]=1;
+//    d_value(OS.U5V0/10);
 }// </editor-fold>
 
 // <editor-fold defaultstate="collapsed" desc="RL_12v          0x05">
 void Show12v(void)
 {
-    d_print("+12,0     \n");
-    //VFLD.Symbol[VFLD_CN2]=1;
-    //VFLD.Symbol[VFLD_DEC]=1;
-    d_value(OS.U12V/10);
+//    d_print("+12,0     \n");
+//    //VFLD.Symbol[VFLD_CN2]=1;
+//    //VFLD.Symbol[VFLD_DEC]=1;
+//    d_value(OS.U12V/10);
 }// </editor-fold>
 
 // <editor-fold defaultstate="collapsed" desc="RL_PWM_H        0x10">
@@ -498,7 +510,7 @@ void OS_SetupMenu(void)
         case 1:                                                                 // Setup Menu
             if(VFLD.ScrollSpeed==0)
             {
-                Wait1S();
+                OS_delay_1S();
                 VFLD_scroll( setupstring[0][ OS.submode ], 2);
                 OS.runmode++;
             }
@@ -553,7 +565,7 @@ void OS_SetupMenu(void)
         case 20:                                                                // Keypad Menu
             if(VFLD.ScrollSpeed==0)
             {
-                Wait1S();
+                OS_delay_1S();
                 VFLD_scroll( setupstring[1][ OS.submode ], 2);
                 OS.runmode++;
             }
@@ -613,7 +625,7 @@ void OS_SetupMenu(void)
         case 60:                                                                // ROM Menu
             if(VFLD.ScrollSpeed==0)
             {
-                Wait1S();
+                OS_delay_1S();
                 VFLD_scroll( setupstring[2][ OS.submode ], 2);
                 OS.runmode++;
             }
@@ -685,7 +697,7 @@ void OS_SetupMenu(void)
         case 100:                                                               // Clock Menu
             if(VFLD.ScrollSpeed==0)
             {
-                Wait1S();
+                OS_delay_1S();
                 VFLD_scroll( setupstring[3][ OS.submode ], 2);
                 OS.runmode++;
             }
@@ -748,7 +760,7 @@ void OS_SetupMenu(void)
         case 140:                                                               // Sys Menu
             if(VFLD.ScrollSpeed==0)
             {
-                Wait1S();
+                OS_delay_1S();
                 VFLD_scroll( setupstring[4][ OS.submode ], 2);
                 OS.runmode++;
             }
@@ -924,18 +936,18 @@ void OS_SetRL(void)
 
 // <editor-fold defaultstate="collapsed" desc="RL_Boot         0xFE">
 void BootLevel(void){
-    d_clr();
-    d_print("  READY   \n");
+    //d_clr();
+    //d_print("  READY   \n");
     RefreshDisplay();
-    Wait1S();
+    OS_delay_1S();
     OS_SetRunlevel(Startmode);
 }// </editor-fold>
 
 // <editor-fold defaultstate="collapsed" desc="RL_Error        0xFF">
 void ErrorLevel(void){
-    d_clr();
-    d_print("ERROR     \n");
-    //VFLD.Symbol[VFLD_CN2]=1;
-    d_value(OS.prev_runlevel);
+//    d_clr();
+//    d_print("ERROR     \n");
+//    //VFLD.Symbol[VFLD_CN2]=1;
+//    d_value(OS.prev_runlevel);
     RefreshDisplay();
 } // </editor-fold>

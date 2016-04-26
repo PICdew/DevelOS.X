@@ -23,7 +23,7 @@ extern "C" {
 #define MOD_ADC                     // ad converters. needed to track physical environment
 #define MOD_FlashFS                 // needed for access to internal eeprom
 #define MOD_Console                 // TODO: abstraction layer for UART,Display and Input Modules
-#define MOD_UART                    // TODO: serial console
+//#define MOD_UART                    // TODO: serial console
     
     // Additional Modules
 //#define MOD_I2C                   // I2C Driver, not using MSSP module
@@ -53,18 +53,25 @@ extern "C" {
 /*      These Modules do not need any further configuration, they are ready to use
  */
 #ifdef MOD_rtc
+    #define T1_preload_h    0b00010111
+    #define T1_preload_l    90
+    // preloads calculation:
+    // ( 65536 - (2 register write) ) - ( (16M Fcyc) / 256 Prescale )= 3034
+    // the 46k20 only has 1:8 prescaler for TMR1, so we need 1:32 software postscaler
+    // TODO: check and recalculate these, they are taken from another project
     #include "./rtc.h"
 #endif
 
 #ifdef MOD_FlashFS
+    // TODO: if no internal eeprom is present, emulate it in program flash
     #include "./FlashFS.h"
     #include "./eeprom.h"
 #endif/* MOD_FlashFS */
 
 #ifdef MOD_Console
-    #define CMD_Buffer      32
-    #define CON_width       32
-    #define CON_lines       4
+    #define CON_width       22
+    #define CON_lines       8
+    #define CON_command     CON_lines-1     // use the last line of the buffer as command line
     #include "console.h"
 #endif /* MOD_Console */
 // </editor-fold>

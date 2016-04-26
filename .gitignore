@@ -1,6 +1,7 @@
 # local PIC build files
 build/
 dist/
+debug/
 *.err
 
 # Windows image file caches

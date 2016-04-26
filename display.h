@@ -27,17 +27,17 @@ extern "C" {
 #define DefaultBrightness   7
 #define BufferLines         5  //TODO: Move buffer to console
 
-    extern struct Disp {
-        unsigned char Buffer[BufferLines][20];
-                    /* Linebuffer for Text
-                     * This is not the Hardware Buffer, this is the internal Line Buffer for the OS
-                     */
-        unsigned char cursor_x;                 //
-        unsigned char cursor_y;                 // Cursor Position
-        unsigned char view_x;                   //
-        unsigned char view_y;                   // Viewport. Vorerst nur Zeile
-        unsigned char light;                    // TODO: for backlight switching/dimming
-    } Display;
+//    extern struct Disp {
+//        //unsigned char Buffer[BufferLines][20];
+//                    /* Linebuffer for Text
+//                     * This is not the Hardware Buffer, this is the internal Line Buffer for the OS
+//                     */
+//        unsigned char cursor_x;                 //
+//        unsigned char cursor_y;                 // Cursor Position
+//        unsigned char view_x;                   //
+//        unsigned char view_y;                   // Viewport. Vorerst nur Zeile
+//        unsigned char light;                    // TODO: for backlight switching/dimming
+//    } Display;
 
     void InitDisplay(void);                     // Hardware Specific Initialisation
     void RefreshDisplay(void);                  /* Hardware Specific Refresh Routine
@@ -45,12 +45,12 @@ extern "C" {
                                                  * HW-Specific stuff is all switched by defines 
                                                  */
 
-    void d_clr(void);                                           // Clear Screen
-    void d_pos(const unsigned char x, const unsigned char y);   // Set Cursor Pos
-    void d_view(const unsigned char x, const unsigned char y);  // Set Viewport
-    void d_print(const char* string[]);                         // print string to current cursor pos
-    void d_cr(void);                                            // do carriage return. scroll linebuffer and set pos to 0,0
-    void d_value(const unsigned int value);                     // convert integer to string and print to cursor. auto-omit zeroes
+//    void d_clr(void);                                           // Clear Screen
+//    void d_pos(const unsigned char x, const unsigned char y);   // Set Cursor Pos
+//    void d_view(const unsigned char x, const unsigned char y);  // Set Viewport
+//    void d_print(const char* string[]);                         // print string to current cursor pos
+//    void d_cr(void);                                            // do carriage return. scroll linebuffer and set pos to 0,0
+//    void d_value(const unsigned int value);                     // convert integer to string and print to cursor. auto-omit zeroes
 
 #endif /* MOD_Display */
 

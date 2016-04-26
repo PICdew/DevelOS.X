@@ -16,7 +16,6 @@ extern "C" {
 
 #pragma udata CON
 extern struct CONSOLE {
-    unsigned char command[CMD_Buffer];          // command buffer
     unsigned char Buffer[CON_lines][CON_width]; // TODO: Console Buffer instead of double diplay buffer
     unsigned char cursor_x;                     //
     unsigned char cursor_y;                     // Cursor Position
