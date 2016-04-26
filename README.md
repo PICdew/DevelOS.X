@@ -5,6 +5,16 @@ Started 27.04.2013 as an OS for Microchip PIC MCUs.
 It is designed to be tiny but powerfull. 
 Almost everything is modular, so it can be fitted to any project.
 
+State right now: working on PIC 18F 46K20
+
+Uses 805 Bytes RAM, 17953 Bytes ROM, 128 Bytes EEPROM 
+
+Runs 5500 Loops per second @ 64 MHz in Standby Runlevel.
+
+This includes RTC, 2 Hz Display Refresh Rate, 
+8 Lines x 22 Console Buffer, 8 Events Pipeline Buffer, 
+3 LF and 2 HF Software counters
+
 Modularization is done mostly with #define statements in header files.
 - hardware.h      : Pin assignments and module activation
 - DevelOS.h       : internal parameters and data structures for the OS
@@ -19,12 +29,8 @@ Modularization is done mostly with #define statements in header files.
 - VFLD.h          : Princeton Technology PT6311 or compatible VFD Driver
 
 There are drivers for some common hardware, like HD44780/KS0073 LCD-Displays.
-These must be configured in hardware.h
-
-Other modules exist for internal peripherals, like EEPROM, ADC and so on.
-These may or may not have their own Parameters.
-
-Some modules are purely software, like the RTC. The RTC will propably get included into the core.
+These must be configured in hardware.h. Other modules exist for internal peripherals, like EEPROM, ADC and so on.
+These may or may not have their own Parameters. Some modules are purely software, like the RTC. The RTC will propably get included into the core.
 
 I am using a lot of editor folds to keep the code readble.
 
