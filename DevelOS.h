@@ -35,7 +35,7 @@ extern "C" {
 #define EventBuffer         8              // Length of the internal Event Queue
 #define LF_Count            3               // Number of LF-Counters 
                                             // These are like programmable software-timers, running at 32 Hz
-#define ISR_HF_Count        2               // Number of HF-Counters for the ISR-Routine. 
+#define ISR_HF_Count        5               // Number of HF-Counters for the ISR-Routine. 
                                             // These are like programmable software-timers, running at (Fosc / 4) /256
 /* Remember: The high priority ISR will go through a loop for the HF Count. 
  * So it is important to keep that number as low as possible */
