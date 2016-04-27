@@ -33,7 +33,7 @@ extern "C" {
 #define EV_uart_rx      0x30    // data = recieved byte
 #define EV_uart_tx      0x31    // byte transmit completed
 #define EV_uart_error   0x32    // data = error code
-
+    
     // Software timers
 #define EV_LF_Timer     0xF0    // data = timer-number
 #define EV_HF_Timer     0xF1    // data = timer-number
@@ -43,6 +43,7 @@ extern "C" {
 #define EV_LFT_count    0x01    // count the counters
 #define EV_LFT_rtc      0x02    // increment rtc
 #define EV_LFT_display  0x03    // redraw display
+#define EV_LFT_pwm      0x04    // refresh the pwm registers
 
     // Error Codes
     // UART Error Codes

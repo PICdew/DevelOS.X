@@ -29,7 +29,6 @@ extern "C" {
 //#define MOD_I2C                   // I2C Driver, not using MSSP module
 //#define MOD_FlashFS_extSPI        // TODO: Driver for external SPI Flash
 //#define MOD_FlashFS_extI2C        // Driver for I2C eeprom devices. unfinished
-//#define MOD_SoftPWM               // TODO: PWM Output on any Pin, controlled by software timers.
 //#define MOD_HardPWM               // TODO: PWM Output using the PIC hardware CCPWM module
 
     // Input Modules
@@ -99,16 +98,6 @@ extern "C" {
     #define RX_t            TRISCbits.TRISC7
     #define UART_echo
 #endif /* MOD_UART */
-// </editor-fold>
-
-// <editor-fold defaultstate="collapsed" desc="MOD_SoftPWM">
-#ifdef MOD_SoftPWM
-    // The SoftPWM Module will use the HF-Counters 0 and 1, 
-    // for period and active time, respectively.
-    // any digital output pin can be used for this module
-    #define PWM_Pin     PORTCbits.RC2
-    #define PWM_Tris    TRISCbits.TRISC2
-#endif
 // </editor-fold>
     
 // <editor-fold defaultstate="collapsed" desc="Analog Keypad Module">    
@@ -231,7 +220,14 @@ extern "C" {
     #include "eeprom_i2c.h"
 #endif /* MOD_FlashFS_extI2C */
     // </editor-fold>
-           
+    
+// <editor-fold defaultstate="collapsed" desc="Hardware PWM">    
+#ifdef MOD_HardPWM
+    #define PWM0_t  TRISCbits.TRISC2
+    #define PWM1_t  TRISCbits.TRISC1
+#endif /* MOD_HardPWM */
+    //</editor-fold>       
+    
 #ifdef	__cplusplus
 }
 #endif

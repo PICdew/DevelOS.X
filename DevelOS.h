@@ -31,14 +31,19 @@ extern "C" {
 #define BOOT_SLOW                           // This will add some delays to the startup process
 #define Slowboot            1000            // how slow shall i boot?
 #define Startmode           RL_Standby      // OS shall switch to this after booting
+#define Display_Freq        2               
+#define ADC_Freq            1
+#define PWM_Freq            1
 #define ResetToken          0xAA            // this is for resetting the os in debug
-#define EventBuffer         8              // Length of the internal Event Queue
+#define EventBuffer         32              // Length of the internal Event Queue
 #define LF_Count            3               // Number of LF-Counters 
                                             // These are like programmable software-timers, running at 32 Hz
 #define ISR_HF_Count        5               // Number of HF-Counters for the ISR-Routine. 
                                             // These are like programmable software-timers, running at (Fosc / 4) /256
-/* Remember: The high priority ISR will go through a loop for the HF Count. 
- * So it is important to keep that number as low as possible */
+/* Remember: The HF counters will be activated inside the OS by incrementing OS.HFCounters 
+ *           The number here just sets the maximum available HF Counters. 
+ *           Each takes 5 bytes of RAM.
+ *  */
 
 #pragma udata OS_Data    
 extern struct OS_State {        
@@ -58,25 +63,10 @@ extern struct OS_State {
     }                           Event[EventBuffer];
     volatile unsigned char      numEvents;
 
-        // ISR Flags
-    volatile char               HFCounters;
-    /*volatile char               RefreshDisplay;
-    volatile char               RefreshAD;
-    volatile char               RefreshKP;
-    volatile char               EventKP;
-    volatile char               EventT0;
-    volatile char               EventAD;
-    volatile char               EventRTC;*/
-
         // PWM
-    /*volatile unsigned int       HF_period0;
-    volatile unsigned int       HF_period1;
-    volatile unsigned int       HF_duty0;
-    volatile unsigned int       HF_duty1;
-    volatile char               HF_event0;
-    volatile char               HF_event1;
-    unsigned int                PWM_Value[4];*/
-
+    unsigned int                pwm0;
+    unsigned int                pwm1;
+    
         // Operational Conditions
     unsigned int                U3V3;       //TODO: verallgemeinern. diese gehören ins ADC-Modul
     unsigned int                U5V0;
@@ -88,6 +78,7 @@ extern struct OS_State {
     unsigned long               Tinst;        // instruction time in nanoseconds
     unsigned char               F_Display;
     unsigned char               F_ADC;
+    unsigned char               F_PWM;
     volatile unsigned int       com_frame;
     unsigned long               Loopcount;
     unsigned int                LPS;
@@ -129,6 +120,7 @@ extern volatile struct ADC_State {
 extern volatile struct Counter {
     volatile unsigned int       Count;
     volatile unsigned int       Wait;
+    signed char                 Channel;
 } isr_hf_count[ISR_HF_Count];
 #pragma udata
 
@@ -142,6 +134,7 @@ extern struct LF_Counter {
 #define LFT_rtc         0
 #define LFT_display     1
 #define LFT_adc         2
+#define LFT_pwm         3
 
 // Functions in DevelOS.c
     
@@ -174,24 +167,33 @@ void OS_SetRunlevel(unsigned char runlevel);
 int crc16(char* ptr, char len);
 void float2string(char * output, float value);
 
+// <editor-fold defaultstate="collapsed" desc="#pragma romdata system_strings">
+
+#define sysstrings          14      // how many do we have?
+
+#define sysstr_void         0    //    "          \0",     // empty string with trailing zero
+#define sysstr_develos      1    //    "DevelOS\0   ",     // develos 
+#define sysstr_version      2    //    "8bit v0.1\0 ",     // develos version 
+#define sysstr_display      3    //    "Display:\0  ",     // display
+#define sysstr_flashfs      4    //    "FlashFS\0   ",     // flashfs
+#define sysstr_formating    5    //    "formating\0 ",     // formating
+#define sysstr_corrupt      6    //    "corrupted!\0",     // corrupt
+#define sysstr_eeprom       7    //    "EEPROM :\0  ",     // eeprom
+#define sysstr_used         8    //    "Used\0      ",     // used
+#define sysstr_block        9    //    "Block \0    ",     // block
+#define sysstr_error        10    //    "Error \0    "      // Error
+#define sysstr_free         11    //    "Free\0      "      // Error
+#define sysstr_lps          12    //    "LPS:\0      "      // lps
+#define sysstr_idle         13    //    "% Idle\0    "      // % idle
+
 #pragma romdata system_strings
-extern const rom char sys_string[14][11];     // system strings need to be constant length. 10 bytes plus zero
+extern const rom char sys_string[sysstrings][11];     // system strings need to be constant length. 10 bytes plus zero
 #pragma romdata
 
-#define sysstr_void         0x00    //    "          \0",     // empty string with trailing zero
-#define sysstr_develos      0x01    //    "DevelOS \0  ",     // develos 
-#define sysstr_version      0x02    //    "8bit v0.1\0 ",     // develos version 
-#define sysstr_display      0x03    //    "Display: \0 ",     // display
-#define sysstr_flashfs      0x04    //    "FlashFS  \0 ",     // flashfs
-#define sysstr_formating    0x05    //    "formating\0 ",     // formating
-#define sysstr_corrupt      0x06    //    "corrupted!\0",     // corrupt
-#define sysstr_eeprom       0x07    //    "EEPROM : \0 ",     // eeprom
-#define sysstr_used         0x08    //    " Used\0     ",     // used
-#define sysstr_block        0x09    //    "Block \0    ",     // block
-#define sysstr_error        0x0A    //    "Error \0    "      // Error
-#define sysstr_free         0x0B    //    "Free\0      "      // Error
-#define sysstr_lps          0x0C    //    "LPS:\0      "      // lps
-#define sysstr_idle         0x0D    //    "% Idle\0    "      // % idle
+
+
+//</editor-fold>
+
 #ifdef	__cplusplus
 }
 #endif

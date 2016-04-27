@@ -112,20 +112,10 @@ void OS_InitGlobals(void)      // Initialize Global Variables
     rtc.year=0;
 #endif
     
-#ifdef MOD_Display
-//    for(y=0;y<BufferLines;y++)
-//    {
-//        for(x=0;x<20;x++)
-//        {
-//            Display.Buffer[y][x]=' ';
-//        }
-//    }
-//    Display.cursor_x=0;
-//    Display.cursor_y=0;
-//    Display.view_x=0;
-//    Display.view_y=0;
-//    Display.light=1;    // if light is only switched, it should be on by default. if dimmed, this should set minimum
-#endif /* MOD_Display */
+#ifdef MOD_HardPWM
+    OS.pwm0 = 0;
+    OS.pwm1 = 0;
+#endif
     
 #if defined MOD_UART
     uart.rx_bytes = 0;
@@ -145,6 +135,7 @@ void OS_InitGlobals(void)      // Initialize Global Variables
 #ifdef MOD_Console
     c_clr();
 #endif /* MOD_Console */
+    
 }// </editor-fold>
 
 // <editor-fold defaultstate="collapsed" desc="void OS_InitChip(void)">
@@ -216,16 +207,30 @@ void OS_InitChip(void)         // Configure the Hardware Modules
     SSPCON1bits.SSPM = 0b1000;  // I2C Master mode, clock = FOSC/(4 * (SSPADD + 1))*/
     SCL = 1;                    // SCL input
     SDA = 1;                    // SDA input
-    #endif /* MOD_FlashFS_extI2C 
+    #endif /* MOD_FlashFS_extI2C */
     
     // PWM Module
     #ifdef MOD_HardPWM
-    TRISCbits.TRISC2 = 1;
-    PR2 = 0xFF ;
-    CCPR1L = 0b01111100 ;
-    CCP1CON = 0b00111100 ;
-    T2CONbits.T2CKPS = 0b11;
-    T2CONbits.TMR2ON = 1;
+    PWM0_t = 1;
+    PWM0_t = 1;    
+    PSTRCONbits.STRA = 1;   // disable all pins on the eccp-module
+    PSTRCONbits.STRB = 0;
+    PSTRCONbits.STRC = 0;
+    PSTRCONbits.STRD = 0;
+//    EPWM_p = 1;                 // then enable only the one the user wants
+    PR2 = 0xFF;                 // this will give 10bit resolution down to 20 MHz with unaudible pwm frequency
+    // set up CCP1
+    CCP1CONbits.P1M = 0b00;     
+    CCP1CONbits.CCP1M = 0b1100; // set standard pwm mode
+    CCP1CONbits.DC1B = 0b00;    // the 2 lower bits of the 10 bit duty cycle
+    CCPR1L = 0x00 ;             // the 8 higher bits of the 10 bit duty cycle
+    // set up CCP2
+    CCP2CONbits.CCP2M = 0b1100;
+    CCP2CONbits.DC2B = 0b00;    // the 2 lower bits of the 10 bit duty cycle
+    CCPR2L = 0x00 ;             // the 8 higher bits of the 10 bit duty cycle
+    // configure timer 2 
+    PIR1bits.TMR2IF = 0;        // reset the flag
+    T2CONbits.T2CKPS = 0b00;    // no prescale. will run at about 60 kHz with sysclock 64MHz
     #endif /* MOD_HardPWM */
 
     // UART Module
@@ -247,7 +252,7 @@ void OS_InitChip(void)         // Configure the Hardware Modules
     RCONbits.IPEN = 1;          // enable priority
     INTCON2bits.TMR0IP = 1;     // Timer 0  : High Priority
     IPR1bits.TMR1IP = 1;        // Timer 1  : High Priority
-    PIR1bits.TMR2IF = 0;        // Timer 2  : Low Priority
+    IPR1bits.TMR2IP = 0;        // Timer 2  : Low Priority
     IPR1bits.ADIP = 0;          // ADC      : Low Priority
     #ifdef MOD_UART
     IPR1bits.TXIP=0;            // UART tx  : Low Priority
@@ -255,10 +260,12 @@ void OS_InitChip(void)         // Configure the Hardware Modules
     #endif /* MOD_UART */
 
     // reset flags and enable irqs
-    INTCONbits.TMR0IF = 0;          // Timer 0
+    INTCONbits.TMR0IF = 0;      // Timer 0
     INTCONbits.TMR0IE = 1;
-    PIR1bits.TMR1IF = 0;            // Timer 2
+    PIR1bits.TMR1IF = 0;        // Timer 1
     PIE1bits.TMR1IE = 1;
+    PIR1bits.TMR2IF = 0;        // Timer 2
+    PIE1bits.TMR2IE = 1;
 
     #ifdef MOD_ADC              // ADC
     PIR1bits.ADIF = 0;          // clear AD interrupt
@@ -313,11 +320,10 @@ void InitOS(void)
     
     // determine CPU clock and define System Timing
     
-    OS.F_Display=2;                 // TODO: create an array to store system timings
-    OS.F_ADC=1;                     // use floats for timings to enable refresh rates < 1 / second
+    OS.F_Display=Display_Freq;                 // TODO: create an array to store system timings
+    OS.F_ADC=ADC_Freq;                     // use floats for timings to enable refresh rates < 1 / second
+    OS.F_PWM=PWM_Freq;
     setTiming();
-//    isr_hf_count[EV_HFT_rtc].Wait = ( 1000 * OS.CPUClock / 16 ) / 2048;
-//    isr_hf_count[EV_HFT_display].Wait = isr_hf_count[EV_HFT_rtc].Wait / OS.F_Display;
 
     // clear timing counters
     OS.FPS=0;
@@ -345,7 +351,7 @@ void InitOS(void)
     OS.DisplayType=0;
     
     // set the number of active HF Counters
-    OS.HFCounters=0;
+    //OS.HFCounters=0;
     
     // OS should be in ready state now
     OS.isInitialized=1;
@@ -405,7 +411,7 @@ void OS_Event(void)
             delEvent();
             break;//</editor-fold>
             
-        case EV_rtc:        // <editor-fold defaultstate="collapsed" desc="EV_rtc">
+        case EV_rtc:        // <editor-fold defaultstate="collapsed" desc="EV_rtc">            
             IncrementRTC();
             OS.FPS=OS.Framecounter;
             OS.LPS=OS.Loopcount;
@@ -463,6 +469,16 @@ void OS_Event(void)
                     break;
                 case EV_LFT_display:         // display
                     addEvent( EV_Display, 0);
+                    break;
+                case EV_LFT_pwm:
+                    #ifdef MOD_HardPWM
+                    CCP1CONbits.DC1B = OS.pwm0 & 0x0003;
+                    CCPR1L = OS.pwm0 >> 2;
+                    CCP2CONbits.DC2B = OS.pwm1 & 0x0003;
+                    CCPR2L = OS.pwm1 >> 2;
+                    #else
+
+                    #endif /* MOD_HardPWM */
                     break;
                 default:    // HF-Timer ?
               //      delEvent();
@@ -726,6 +742,7 @@ void setTiming(void)
     lf_count[LFT_rtc].wait = temp;      // postscale for rtc
     lf_count[LFT_display].wait = lf_count[LFT_rtc].wait / OS.F_Display;
     lf_count[LFT_adc].wait = lf_count[LFT_rtc].wait / OS.F_ADC;
+    lf_count[LFT_pwm].wait = lf_count[LFT_rtc].wait / OS.F_PWM;
 }
 //</editor-fold>
 
@@ -832,9 +849,12 @@ void OS_SetRunlevel(unsigned char runlevel)
             c_clr();    // maybe the contents could be saved somewhere as boot log
             
             // Now start the Timers
-            T0CONbits.TMR0ON=1;     // Start Timer0
-            T1CONbits.TMR1ON=1;     // Start Timer1
-            
+            //T0CONbits.TMR0ON=1;       // Start Timer0
+            T1CONbits.TMR1ON=1;         // Start Timer1
+            #ifdef MOD_HardPWM
+            T2CONbits.TMR2ON=1;         // start Timer 2
+            #endif
+
             // finally, enable global irqs
             INTCONbits.GIEH = 1;
             INTCONbits.GIEL = 1;
@@ -939,7 +959,7 @@ void float2string(char * output, float value)
 // <editor-fold defaultstate="collapsed" desc="#pragma romdata system_strings">
 
 #pragma romdata system_strings
-const rom char sys_string[14][11]={
+const rom char sys_string[sysstrings][11]={
     "          \0",     // empty string with trailing zero
     "DevelOS\0   ",     // develos 
     "8bit v0.1\0 ",     // develos version 
