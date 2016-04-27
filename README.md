@@ -7,13 +7,13 @@ Almost everything is modular, so it can be fitted to any project.
 
 State right now: working on PIC 18F 46K20
 
-Uses 805 Bytes RAM, 17953 Bytes ROM, 128 Bytes EEPROM 
+Uses 859 Bytes RAM, 18117 Bytes ROM, 128 Bytes EEPROM
 
 Runs 5500 Loops per second @ 64 MHz in Standby Runlevel.
 
 This includes RTC, 2 Hz Display Refresh Rate, 
 8 Lines x 22 Console Buffer, 8 Events Pipeline Buffer, 
-3 LF and 2 HF Software counters
+3 LF Software counters and 2-Channel PWM Output.
 
 Modularization is done mostly with #define statements in header files.
 - hardware.h      : Pin assignments and module activation
