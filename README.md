@@ -44,6 +44,7 @@ Definitely working:
 - Display	: artifacts came from mismatch of ROM/RAM based strings
 - Console : Abstraction Layer between OS and Input/Output modules
 - LCDuni  : Universal HD44780 Driver. totally independet of pinout. pins can be on diffrent ports
+- HardPWM : Provide 2 PWM Channels using the Hardware PWM modules of the PIC
  
 Definitely NOT working are:
 - I2C 				: This is still unfinished and full of errors
