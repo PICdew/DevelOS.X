@@ -59,6 +59,7 @@ extern struct OS_State {
     volatile unsigned char      numEvents;
 
         // ISR Flags
+    volatile char               HFCounters;
     /*volatile char               RefreshDisplay;
     volatile char               RefreshAD;
     volatile char               RefreshKP;

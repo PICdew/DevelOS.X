@@ -344,6 +344,9 @@ void InitOS(void)
     OS.DisplayInitialized=0;
     OS.DisplayType=0;
     
+    // set the number of active HF Counters
+    OS.HFCounters=0;
+    
     // OS should be in ready state now
     OS.isInitialized=1;
 
