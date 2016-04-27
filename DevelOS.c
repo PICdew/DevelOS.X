@@ -849,6 +849,9 @@ void OS_SetRunlevel(unsigned char runlevel)
 
     switch(OS.runlevel)             // Do Entry stuff (init, SFR's, ...)
     {
+        case RL_Standby:
+            LCD.Light=0;
+            break;
         default:
             //d_clr();
             break;
