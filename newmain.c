@@ -91,6 +91,7 @@ volatile struct UART_DATA uart;
 struct CONSOLE console;
 #pragma udata
 #endif /* MOD_Console */
+
 // </editor-fold>
 
 /*
@@ -113,14 +114,14 @@ void High_ISR(void)
     if(INTCONbits.TMR0IF)       // <editor-fold defaultstate="collapsed" desc="Timer 0 (HF Timer)">
     {
         INTCONbits.TMR0IF = 0;      //irq clear
-        for(i=0; i<OS.HFCounters;i++)
-        {
-            if(isr_hf_count[i].Count++ > isr_hf_count[i].Wait)
-            {
-                addEvent(EV_HF_Timer, i);
-                isr_hf_count[i].Count=0;
-            }
-        }
+//        for(i=0; i<OS.HFCounters; i++)
+//        {
+//            if(isr_hf_count[i].Count++ == isr_hf_count[i].Wait)
+//            {
+//                addEvent(EV_HF_Timer, i);
+//                isr_hf_count[i].Count=0;
+//            }
+//        }
         INTCONbits.TMR0IE = 1;      //irq enable
     } // </editor-fold>
 
@@ -248,6 +249,16 @@ void Low_ISR(void)
         PIE1bits.ADIE=1;                        //  Enable IRQ
     } // </editor-fold>
     
+    else if(PIR1bits.TMR2IF)
+    {
+        PIR1bits.TMR2IF =0;
+        #ifdef MOD_HardPWM
+        TRISCbits.TRISC1 = 0;
+        TRISCbits.TRISC2 = 0;
+        #endif
+        PIE1bits.TMR2IE = 1;
+
+    }
     //INTCONbits.GIEL =1;
 }
 // </editor-fold>
@@ -282,7 +293,7 @@ void main(void)
     
     while(1)
     {
-        // Do OS own stuff here
+        // Do Event Handling
         OS_Event();
         
         // Now come the runlevels
@@ -389,7 +400,7 @@ void main(void)
                                     sysprint(1, sysstr_free, 0);
                                     break;
                                 default:
-                                    sysprint(1, sysstr_error, 0);
+                                    sysprint(1, sysstr_used, 0);
                                     break;
                             }
                             c_cr();

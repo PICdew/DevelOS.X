@@ -3,22 +3,15 @@
 // <editor-fold defaultstate="collapsed" desc="RL_Standby      0x01">
 void DoStandby(void)
 {
-    // Just show uptime and clock. 
+    // Just show the clock. 
     // TODO: Try to reduce the core clock in this mode to save energy
     // But beware: so far this has always messed up everything
-
     char i;
-     
-    for(i=6;i<14;i++)
+    
+    for(i=6; i<14; i++)
     {
         console.Buffer[1][i]=rtc.string[i-6];
     }
-    c_pos(6,2);
-//    sysprint(0, sysstr_lps, 1);
-//    c_value(OS.LPS);
-//    c_pos(6,3);
-//    c_value(OS.CPUIdlePercent);
-//    sysprint(0, sysstr_idle, 2);
 }
 // </editor-fold>
 
