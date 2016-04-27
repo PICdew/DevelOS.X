@@ -19,8 +19,6 @@ extern "C" {
  * if there is no block for your processor, you must create one.
  * look at the other blocks and your device datasheet to determine sane values
  *
- * this does also configure internal eeprom size
- *
  * TODO: Check for compatibility between processors.
  */
 

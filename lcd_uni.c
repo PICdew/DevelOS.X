@@ -33,6 +33,16 @@ char InitLCD(void)
         memset(LCD.Buffer[i], ' ', LCDuni_Cols );
     }    
 
+    // Set all TRIS to Output
+    TRIS_BL=0;
+    TRIS_RS=0;
+    TRIS_RW=0;
+    TRIS_EN=0;
+    TRIS_D7=0;
+    TRIS_D6=0;
+    TRIS_D5=0;
+    TRIS_D4=0;
+    
     // Set all Portpins to 0 except Backlight
     LCD_BL=1;
     LCD_D4=0;
@@ -42,16 +52,6 @@ char InitLCD(void)
     LCD_RS=0;
     LCD_RW=0;
     LCD_EN=0;
-
-    // Set all TRIS to Output
-    TRIS_RS=0;
-    TRIS_RW=0;
-    TRIS_EN=0;
-    TRIS_D7=0;
-    TRIS_D6=0;
-    TRIS_D5=0;
-    TRIS_D4=0;
-    TRIS_BL=0;
     
     /* Init Sequence from Hitachi HD44780U Datasheet       
      * 
@@ -144,6 +144,17 @@ void RefreshLCD(void)
             writeNibbleToLCD(lowerNibble);
             OS_delay_ns(LCD_T_AH);
         }
+    }
+    
+    // for the light, zero should be off, 1 should be max. 
+    // values > 1 will be used for pwm dimming.
+    if(LCD.Light == 1)
+    {
+        LCD_BL=1;
+    }
+    else if(LCD.Light == 0)
+    {
+        LCD_BL=0;
     }
     LCD.Busy = 0;
 }

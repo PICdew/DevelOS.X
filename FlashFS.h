@@ -16,7 +16,7 @@ extern "C" {
 #ifdef MOD_FlashFS
 
     #define EE_Blocksize        64
-    #define EE_Blocks           4       // 256 Byte, these exist on all PICs
+    #define EE_Blocks           16       // 256 Byte 
     //#define EE_bytes_System     21      // 21 bytes used for now, 15 system, 6 rtc TODO: assign dynamically
 
     // Block signatures

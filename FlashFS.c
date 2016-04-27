@@ -15,7 +15,7 @@ char InitFlash(void)
     
     for(i=0;i<EE_Blocks;i++)
     {
-        Flash.eprom.Block[i].adress=(i*EE_Blocksize) & 0x00FF;                                          // offset from eeprom start
+        Flash.eprom.Block[i].adress=(i * EE_Blocksize);                                          // offset from eeprom start
         Flash.eprom.Block[i].signature=EE_read_byte(Flash.eprom.Block[i].adress + (EE_Blocksize-1) );   // last byte of block
         if(Flash.eprom.Block[i].signature != EE_sig_Free)
         {

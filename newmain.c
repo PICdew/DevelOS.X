@@ -113,18 +113,14 @@ void High_ISR(void)
     if(INTCONbits.TMR0IF)       // <editor-fold defaultstate="collapsed" desc="Timer 0 (HF Timer)">
     {
         INTCONbits.TMR0IF = 0;      //irq clear
-        for(i=0; i<ISR_HF_Count;i++)
+        for(i=0; i<OS.HFCounters;i++)
         {
             if(isr_hf_count[i].Count++ > isr_hf_count[i].Wait)
             {
-                if(OS.isInitialized==1)
-                {
-                    addEvent(EV_HF_Timer, i);
-                }
+                addEvent(EV_HF_Timer, i);
                 isr_hf_count[i].Count=0;
             }
         }
-
         INTCONbits.TMR0IE = 1;      //irq enable
     } // </editor-fold>
 

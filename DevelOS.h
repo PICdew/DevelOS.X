@@ -28,14 +28,14 @@ extern "C" {
 #define COUNT 9
 #define REFval 10
 
-//#define BOOT_SLOW                           // This will add some delays to the startup process
+#define BOOT_SLOW                           // This will add some delays to the startup process
 #define Slowboot            10000            // how slow shall i boot?
 #define Startmode           RL_Standby      // OS shall switch to this after booting
 #define ResetToken          0xAA            // this is for resetting the os in debug
 #define EventBuffer         8              // Length of the internal Event Queue
 #define LF_Count            3               // Number of LF-Counters 
                                             // These are like programmable software-timers, running at 32 Hz
-#define ISR_HF_Count        2               // Number of HF-Counters for the ISR-Routine. 
+#define ISR_HF_Count        5               // Number of HF-Counters for the ISR-Routine. 
                                             // These are like programmable software-timers, running at (Fosc / 4) /256
 /* Remember: The high priority ISR will go through a loop for the HF Count. 
  * So it is important to keep that number as low as possible */
@@ -59,6 +59,7 @@ extern struct OS_State {
     volatile unsigned char      numEvents;
 
         // ISR Flags
+    volatile char               HFCounters;
     /*volatile char               RefreshDisplay;
     volatile char               RefreshAD;
     volatile char               RefreshKP;
