@@ -1,0 +1,71 @@
+DevelOS FlashFS
+
+1. Overview
+
+Using the internal EEPROM on PIC devices can be quite tricky. So i have implemented a set of functions to make this 
+really easy. I have decided to divide the internal EEPROM into blocks of 64 bytes each, wich can be seen as "files".
+The last byte of each block is used as signature, to identify the type of data in the block. bytes 61 and 62 store a crc16
+checksum for the block, and the remaining 61 bytes are free for user data. Two blocks are used by DevelOS itself.
+Block 0 stores FlashFS internal data, mostly for external devices. Block 1 holds DevelOS internal data, like the rtc time,
+reset counters and stuff like that. Since most PICs have at least 256 bytes of EEPROM, this leaves 2 blocks for the user
+or other modules. FlashFS uses a struct to provide the most important data about the EEPROM. This struct is declared in
+FlashFS.h as follows:
+
+struct Flash_Data {
+    unsigned char Data[EE_Blocksize];   // have a buffer for one block 
+
+    struct EEPROM {
+        unsigned char UsedBlocks;       // internal blocks used
+        unsigned char Blocks;           // internal blocks total
+        struct {
+            unsigned int adress;        // offset from eeprom start
+            unsigned char signature;    // last byte of block
+        } Block[EE_Blocks];
+    } eprom;
+
+} Flash;
+
+Flash.Data[] is the shared buffer for one block of 64 bytes.
+The sub-struct Flash.eprom stores the total number of block, and the number of used blocks.
+The sub-sub-struct Flash.eprom.Block[] stores the signature of each block, as well as its address in the EEPROM.
+
+2. Using FlashFS
+
+2.1 Saving Data
+
+All FlashFS functions use one shared 64 Byte Buffer, that is Flash.Data[]. If you want to save something in the EEPROM,
+first write your data into Flash.Data[], leaving the last 3 bytes free. then, put a signature into the last byte. this 
+is mostly for the OS to detect at boot time wich blocks are free. 
+Now, go through the signatures in Flash.eprom.Block[x].signature, and find one that matches EE_sig_Free. 
+Finally, call EE_save_block(x). the crc16 will be calculated automatically and the block written to the EEPROM.
+
+2.2 Loading Data
+
+To find your data, go trough Flash.eprom.Block[x].signature and find the one that matches your signature.
+Then call EE_load_block(x), and your data will be stored in Flash.Data[]. If the function returns zero, the crc
+has been validated, so you don't have to do more checks. 
+
+3. Make it stylish
+
+3.1 Load your data at boot time
+
+If you want to fully integrate your data block into FlashFS and DevelOS, there are a few more steps to take.
+First, put your signature into a #define statement in FlashFS.h.
+Then, go to newmain.c and find the switch(OS.runlevel) statement at the bottom. Expand RL_Boot. Find the sub-case RL_Boot_Load, and expand that one as well.
+There you will find another sub-switch, called switch(Flash.eprom.Block[i].signature).
+You will see that there are some cases already for the predefined signatures. This is the place to add a case: for your signature. if you need the data right at boot time, you can load it here. You can just call EE_load_block(i), and 
+your data will be in Flash.Data[]. No more need to check consistency or location of it.
+Finally, you will see that there is a sysprint() call in each case. this is to show at boot time what is inside each block.
+you can just copy the sysprint() call from the default: case, to have your block show up as used in the boot process.
+
+3.2 Give your block a name
+
+If you want your block to be named, there are two more steps to go.
+Head over to DevelOS.c, scroll all to the bottom, and expand the editor fold "#pragma romdata system_strings". Add 
+your string to the end of the array. be carefull to keep the string the same length as the others, filling it up with spaces 
+if needed. put a "\0" at the end of your string, as you see in the other ones. That will insert the termination zero.
+Then, open DevelOS.h. At the bottom of the file, you will find the declaration of sys_string. right above that, there 
+is the line "#define sysstrings 14", which gives the number of strings. increase that number by one.
+Finally, add a #define to the end of the list to give your string a name. 
+Now in the RL_Boot_Load case of your block, you can just add sysprint(1, sysstr_yourstring, 0); and your string
+will be printed at the console at boot time.
