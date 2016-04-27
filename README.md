@@ -20,10 +20,10 @@ Modularization is done mostly with #define statements in header files.
 - DevelOS.h       : internal parameters and data structures for the OS
 - configbits.h    : The config #pragmas for the particular PIC 
 - events.h        : these are the hooks to the process pipeline
-- display.h       : abstraction layer between OS and Display Hardware.
+- display.h       : abstraction layer between OS and Display Hardware
 - FlashFS.h       : abstraction layer between OS and Storage 
-- keypad.h        : driver for matrix keypad. analog high speed readout.
-- ps2-keyboard.h  : i had this one semi-working, but without parity check and re-send.
+- keypad.h        : driver for matrix keypad. analog high speed readout with low pincount
+- ps2-keyboard.h  : i had this one semi-working, but without parity check and re-send
 - lcd_uni.h       : Hitachi HD44780/Samsung KS0073 or compatible 4bit LCD Driver. with arbitrary Pinout
 - lcd.h           : Hitachi HD44780/Samsung KS0073 or compatible 4bit LCD Driver. all Pins on one Port
 - VFLD.h          : Princeton Technology PT6311 or compatible VFD Driver
