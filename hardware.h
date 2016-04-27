@@ -63,6 +63,18 @@ extern "C" {
 #endif
 
 #ifdef MOD_FlashFS
+    // <editor-fold defaultstate="collapsed" desc="Processor specific #defines">    
+#if defined(__18F46K20)
+    // <editor-fold defaultstate="collapsed" desc="PIC18F 46K20">
+    #define	EE_1k
+// </editor-fold>
+#elif defined(__18F4550)
+    // <editor-fold defaultstate="collapsed" desc="PIC18F 4550">
+#define EE_256
+// </editor-fold>
+#endif
+// </editor-fold>
+
     // TODO: if no internal eeprom is present, emulate it in program flash
     #include "./FlashFS.h"
     #include "./eeprom.h"
@@ -219,22 +231,7 @@ extern "C" {
     #include "eeprom_i2c.h"
 #endif /* MOD_FlashFS_extI2C */
     // </editor-fold>
-   
-    // These configure EEPROM size for each processor
-    // can also be used to configure other chip-specific stuff
-    
-// <editor-fold defaultstate="collapsed" desc="Processor specific #defines">    
-#if defined(__18F46K20)
-    // <editor-fold defaultstate="collapsed" desc="PIC18F 46K20">
-    #define	EE_1k
-// </editor-fold>
-#elif defined(__18F4550)
-    // <editor-fold defaultstate="collapsed" desc="PIC18F 4550">
-#define EE_256
-// </editor-fold>
-#endif
-// </editor-fold>
-        
+           
 #ifdef	__cplusplus
 }
 #endif

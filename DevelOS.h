@@ -29,7 +29,7 @@ extern "C" {
 #define REFval 10
 
 #define BOOT_SLOW                           // This will add some delays to the startup process
-#define Slowboot            10000            // how slow shall i boot?
+#define Slowboot            1000            // how slow shall i boot?
 #define Startmode           RL_Standby      // OS shall switch to this after booting
 #define ResetToken          0xAA            // this is for resetting the os in debug
 #define EventBuffer         8              // Length of the internal Event Queue

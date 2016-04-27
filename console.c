@@ -19,7 +19,7 @@ void c_cr(void)
     if(console.cursor_y >= CON_lines)
     {
         console.cursor_y=CON_lines-1;
-        console.display_y = CON_lines - LCD.Dimensions.height;
+        console.display_y = (CON_lines - LCD.Dimensions.height) - 1;
         
         // shift Display Buffer 1 line
         for(i=0; i < CON_lines-1 ;i++)
