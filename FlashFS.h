@@ -16,9 +16,19 @@ extern "C" {
 #ifdef MOD_FlashFS
 
     #define EE_Blocksize        64
-    #define EE_Blocks           16       // 256 Byte 
-    //#define EE_bytes_System     21      // 21 bytes used for now, 15 system, 6 rtc TODO: assign dynamically
 
+    // <editor-fold defaultstate="collapsed" desc="Set number of blocks according to processor type">
+#if defined EE_1k
+    #define EE_Blocks           16       
+#elif defined EE_256
+    #define EE_Blocks           4
+#elif defined EE_128
+    #define EE_Blocks           2
+#else
+    #define EE_Blocks           0
+#endif
+//</editor-fold>
+    
     // Block signatures
     #define EE_sig_FlashFS      0x01
     #define EE_sig_System       0x02
@@ -28,7 +38,7 @@ extern "C" {
 
     // <editor-fold defaultstate="collapsed" desc="RAM Buffer for Flash Data">
 extern struct Flash_Data {
-    unsigned char Data[EE_Blocksize];   // store FlashFS Data Block here
+    unsigned char Data[EE_Blocksize];   // have a buffer for one block // no longer store FlashFS Data Block here permanently
 
     struct EEPROM {
         unsigned char UsedBlocks;       // internal blocks used
@@ -54,9 +64,11 @@ extern struct Flash_Data {
         // Byte 60  : 8bit  : external adress for last external device. This allows up to 58 external devices
         // Byte 61  : 16bit : CRC checksum for FlashFS Block
         // Byte 63  : 8bit  : FlashFS Signature Byte
+    // these are for the FlashFS Block only
 #define FFS_int_blocks      0
 #define FFS_ext_devices     1
 #define FFS_Device0         2
+    // these are for every block in internal eeprom
 #define FFS_Data_CRC        61   
 #define FFS_signature       63
 

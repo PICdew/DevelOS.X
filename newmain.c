@@ -318,14 +318,14 @@ void main(void)
                             if(err != 0)
                             {
                                 // no luck, handle error
-                                if(err==-1)
+                                if(err==-2)
                                 {
                                     // no FlashFS Data Block found
                                     sysprint(0, sysstr_formating, 0);
                                     c_cr();
                                     EE_format();
                                 }
-                                else if(err==-2)
+                                else if(err==-1)
                                 {
                                     // FlashFS Data Block invalid
                                     sysprint(0, sysstr_corrupt, 0);
@@ -361,7 +361,14 @@ void main(void)
                         }
                         else
                         {
-                            sysprint(0, sysstr_block, 1);
+                            if(i>9)
+                            {
+                                sysprint(0, sysstr_block, 1);
+                            }
+                            else
+                            {
+                                sysprint(0, sysstr_block, 2);
+                            }
                             c_value(i);
                             c_print(":\0");
                             #ifdef BOOT_SLOW

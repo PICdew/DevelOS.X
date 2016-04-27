@@ -6,81 +6,48 @@
 char InitFlash(void)
 {
     char i;
-    unsigned int crc, crc_r;
-    unsigned char tmp;
-    unsigned int temp;
     signed char err;
     
+    // first, init all data to safe values
     Flash.eprom.UsedBlocks=0;
-    
-    for(i=0;i<EE_Blocks;i++)
+    Flash.eprom.Blocks=EE_Blocks;
+
+    for(i=0; i<EE_Blocksize; i++)
     {
-        Flash.eprom.Block[i].adress=(i * EE_Blocksize);                                          // offset from eeprom start
-        Flash.eprom.Block[i].signature=EE_read_byte(Flash.eprom.Block[i].adress + (EE_Blocksize-1) );   // last byte of block
-        if(Flash.eprom.Block[i].signature != EE_sig_Free)
-        {
-            Flash.eprom.UsedBlocks++;
-        }
-        //Flash.eprom.Block[i].used=EE_read_byte(Flash.eprom.Block[i].adress + (EE_Blocksize-2) );        // bytes used, second-last byte of block
+        Flash.Data[i]=0;    
     }
+    
+    // set addresses and read signature of each block
+    InitEEPROM();
     
     if(Flash.eprom.Block[0].signature != EE_sig_FlashFS)
     {
         // no FlashFS Data Block found
-        return -1;
-        //EE_format();
-        //InitFlash();
+        return -2;
     }
     else
     {
-        // read first Block
-        EE_read_block(Flash.eprom.Block[0].adress, &Flash.Data, EE_Blocksize);
+        // block 0 seems to be FlashFS Data Block.
+        err = EE_load_block(0); 
+        if(err != 0)
+            return err;     // something went wrong
         
-        // check the crc32
-        crc     = crc16(&Flash.Data, EE_Blocksize-4);
-        crc_r   = 0;
-        crc_r   |= ((unsigned char) Flash.Data[FFS_Data_CRC]) << 8;
-        crc_r   |= ((unsigned char) Flash.Data[FFS_Data_CRC+1]);
-
-        if(crc == crc_r)
-        {            
-            /*if(Flash.Data[FFS_ext_devices]>0)
-            {
-                for(i=0; i < Flash.Data[FFS_ext_devices] ; i++)
-                {
-                    unsigned char type,dadr,adr;
-                    char err;
-                    
-                    adr = Flash.Data[FFS_Device0 + i];
-                    dadr = adr & 0xA0;
-                    type = adr & 0xF0;
-                    err = adr;
-                    
-                    switch(type)
-                    {
-                        case I2C_EEPROM:
-                            #ifdef MOD_FlashFS_extI2C
-                            err = i2c_chip_init(dadr, I2C_Delay_100khz, I2C_3Ext_8Int, 0);
-                            #endif
-                            break;
-                        case I2C_EEPROM_16:
-                            #ifdef MOD_FlashFS_extI2C
-                            err = i2c_chip_init(dadr, I2C_Delay_100khz, I2C_0Ext_16Int, 0);
-                            #endif
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            }*/
-        }
-        else
+        // seems we have valid FlashFS data
+        Flash.eprom.Blocks = Flash.Data[FFS_int_blocks];
+        
+        if(Flash.eprom.Blocks != EE_Blocks)
+            return -3;      // this should not happen. never ever.
+        
+        // now, check for used blocks
+        for(i=0; i<Flash.eprom.Blocks; i++)
         {
-            // FlashFS Data Block invalid
-            return -2;
-            //EE_format();
-            //InitFlash();            
+            if(Flash.eprom.Block[i].signature != EE_sig_Free)
+            {
+                Flash.eprom.UsedBlocks++;
+            }
         }
+        
+        // TODO: read info from external devices
         
      /*********************** DDB (Device Data Block) Structure ****************\
      * Device Data                                                              *
@@ -99,12 +66,63 @@ char InitFlash(void)
      * Byte 63  : 8bit  : FlashFS Signature Byte                                *
      \**************************************************************************/
         
-        Flash.eprom.Blocks = Flash.Data[FFS_int_blocks];
-        
+        // all fine
         return 0;
     }
 }
 
 
-
 #endif
+
+
+/*  old code
+ * // read first Block
+//        EE_read_block(Flash.eprom.Block[0].adress, &Flash.Data, EE_Blocksize);
+//        
+//        // check the crc32
+//        crc     = crc16(&Flash.Data, EE_Blocksize-4);
+//        crc_r   = 0;
+//        crc_r   |= ((unsigned char) Flash.Data[FFS_Data_CRC]) << 8;
+//        crc_r   |= ((unsigned char) Flash.Data[FFS_Data_CRC+1]);
+//
+//        if(crc == crc_r)
+//        {            
+////            if(Flash.Data[FFS_ext_devices]>0)
+////            {
+////                for(i=0; i < Flash.Data[FFS_ext_devices] ; i++)
+////                {
+////                    unsigned char type,dadr,adr;
+////                    char err;
+////                    
+////                    adr = Flash.Data[FFS_Device0 + i];
+////                    dadr = adr & 0xA0;
+////                    type = adr & 0xF0;
+////                    err = adr;
+////                    
+////                    switch(type)
+////                    {
+////                        case I2C_EEPROM:
+////                            #ifdef MOD_FlashFS_extI2C
+////                            err = i2c_chip_init(dadr, I2C_Delay_100khz, I2C_3Ext_8Int, 0);
+////                            #endif
+////                            break;
+////                        case I2C_EEPROM_16:
+////                            #ifdef MOD_FlashFS_extI2C
+////                            err = i2c_chip_init(dadr, I2C_Delay_100khz, I2C_0Ext_16Int, 0);
+////                            #endif
+////                            break;
+////                        default:
+////                            break;
+////                    }
+////                }
+////            }
+//        }
+//        else
+//        {
+//            // FlashFS Data Block invalid
+//            return -2;
+//            //EE_format();
+//            //InitFlash();            
+//        }
+ * 
+ */

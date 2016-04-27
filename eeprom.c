@@ -4,52 +4,83 @@
 // <editor-fold defaultstate="collapsed" desc="void EE_format(void)">
 void EE_format(void)
 {
-	unsigned char temp[EE_Blocksize];
-    unsigned int crc;
-    unsigned char byte;
     unsigned char i;
     
     // First, Overwrite all with Free sig
-
     for(i=0;i<EE_Blocksize;i++)
     {
-        temp[i]=EE_sig_Free;
+        Flash.Data[i]=EE_sig_Free;
     }
-    temp[EE_Blocksize-2]=0;
+    
+    // now, write this empty but valid block to all blocks
     for(i=0;i<EE_Blocks;i++)
     {
-        if(i==0)
-        {
-            temp[EE_Blocksize-1]=EE_sig_FlashFS;
-        }
-        else
-        {
-            temp[EE_Blocksize-1]=EE_sig_Free;
-        }
-        EE_write_block(Flash.eprom.Block[i].adress, &temp, EE_Blocksize);
+        EE_save_block(i);
+        //EE_write_block(Flash.eprom.Block[i].adress, &temp, EE_Blocksize);
     }
     
     // Now, prepare FlashFS Data
-    // TODO: generalize, these are for testing
     for(i=0;i<EE_Blocksize;i++)
     {
-        temp[i]=0;
+        Flash.Data[i]=0;
     }
-    temp[0]                 = 16;           // we have 16*64=1024 bytes on a 18F 46K20
-    temp[1]                 = 0;            // have 2 external eeproms on i2c
-    temp[2]                 = 0xB0;         // Atmel 32 kbit
-    temp[3]                 = 0xA8;         // ST 8 kbit
-    crc                     = crc16(&temp, EE_Blocksize-4);
-    byte                    = (unsigned char)( (crc >> 8) & 0xFF);
-    temp[FFS_Data_CRC]      = byte;
-    byte                    = (unsigned char)( crc & 0xFF);
-    temp[FFS_Data_CRC+1]    = byte;
-    temp[FFS_signature]     = EE_sig_FlashFS;
+    
+        // TODO: generalize, these are for testing
+    Flash.Data[0]               = EE_Blocks;    // we have 16*64=1024 bytes on a 18F 46K20
+    Flash.Data[1]               = 0;            // have 2 external eeproms on i2c
+    Flash.Data[2]               = 0xB0;         // Atmel 32 kbit
+    Flash.Data[3]               = 0xA8;         // ST 8 kbit
+    Flash.Data[FFS_signature]   = EE_sig_FlashFS;
     // Write FlashFS Data
-    EE_write_block(Flash.eprom.Block[0].adress, &temp, EE_Blocksize);
+    EE_save_block(0);
+    //EE_write_block(Flash.eprom.Block[0].adress, &temp, EE_Blocksize);
     
     // Finally, write OS Data
     SaveEEPROM_OS(1);
+}// </editor-fold>
+
+// <editor-fold defaultstate="collapsed" desc="char EE_load_block(unsigned char block)">
+char EE_load_block(unsigned char block)
+{
+    unsigned char len = EE_Blocksize;
+	unsigned char *ram_start_address = &Flash.Data;
+    unsigned int eeprom_start_address = Flash.eprom.Block[block].adress;
+    unsigned char result;
+    unsigned int crc, crc_l;
+    
+    result = EE_read_block(eeprom_start_address, ram_start_address, len);
+    
+    crc         = crc16(&Flash.Data, EE_Blocksize-4);
+    crc_l       = 0;
+    crc_l      |= ((unsigned char) Flash.Data[FFS_Data_CRC]) << 8;
+    crc_l      |= ((unsigned char) Flash.Data[FFS_Data_CRC+1]);
+    
+    if(crc != crc_l)
+    {
+        // block invalid
+        return -1;
+    }
+    else
+    {
+        return 0;
+    }
+}// </editor-fold>
+
+// <editor-fold defaultstate="collapsed" desc="char EE_save_block(unsigned char block)">
+char EE_save_block(unsigned char block)
+{
+    unsigned char len = EE_Blocksize;
+	unsigned char *ram_start_address = &Flash.Data;
+    unsigned int eeprom_start_address = Flash.eprom.Block[block].adress;
+    char result;
+    unsigned int crc;
+    crc = crc16(&Flash.Data, EE_Blocksize-4);
+    Flash.Data[FFS_Data_CRC]   = (unsigned char)( (crc >> 8) & 0xFF);
+    Flash.Data[FFS_Data_CRC+1] = (unsigned char)( crc & 0xFF);    
+    
+    result = EE_write_block(eeprom_start_address, ram_start_address, len);
+
+    return result;
 }// </editor-fold>
 
 // <editor-fold defaultstate="collapsed" desc="unsigned char EE_read_block(unsigned int eeprom_start_address, unsigned char *ram_start_address, unsigned char len)">
@@ -171,7 +202,7 @@ unsigned char EE_write_block(unsigned int eeprom_start_address, unsigned char *r
     {
         INTCONbits.GIEL=1;
     }
-    return 1;
+    return 0;
 }// </editor-fold>
 
 // <editor-fold defaultstate="collapsed" desc="TODO: check_block">
@@ -244,111 +275,100 @@ void InitEEPROM(void)
 {
     char i;
 
-    //Flash.eprom.FreeBlocks=0;
-
-    //d_print("LESE EPROM\n");
-    //VFLD.Symbol[VFLD_CN2]=1;
-    //RefreshDisplay();
-
     for(i=0;i<EE_Blocks;i++)
     {
         Flash.eprom.Block[i].adress=i*EE_Blocksize;
         Flash.eprom.Block[i].signature=EE_read_byte(Flash.eprom.Block[i].adress + (EE_Blocksize-1) ) ;
-//        if(Flash.eprom.Block[i].signature==0xAA | Flash.eprom.Block[i].signature == 0xFF)
-//        {
-//            //Flash.eprom.FreeBlocks++;
-//        }
-        //Flash.eprom.Block[i].used=EE_read_byte(Flash.eprom.Block[i].adress + (EE_Blocksize-2) ) ;
     }
 }// </editor-fold>
 
 // <editor-fold defaultstate="collapsed" desc="unsigned char LoadEEPROM_OS(unsigned char block)">
-unsigned char LoadEEPROM_OS(unsigned char block)   // Read System Data from EEPROM
+char LoadEEPROM_OS(unsigned char block)   // Read System Data from EEPROM
 {
-    unsigned char temp[EE_Blocksize];
-    unsigned int crc, crc_l;
+//    unsigned char temp[EE_Blocksize];
+//    unsigned int crc, crc_l;
+    signed char err;
 
-    EE_read_block(Flash.eprom.Block[block].adress, &temp[0], EE_Blocksize);
-    crc         = crc16(&temp, EE_Blocksize-4);
-    crc_l       = 0;
-    crc_l      |= ((unsigned char) temp[61]) << 8;
-    crc_l      |= ((unsigned char) temp[62]);
-    if(crc != crc_l)
+    err = EE_load_block(block);
+    if(err != 0)
     {
-        // block invalid
-        return -1;
+        return err;
     }
+        
+
+    // EE_read_block(Flash.eprom.Block[block].adress, &temp[0], EE_Blocksize);
+//    crc         = crc16(&temp, EE_Blocksize-4);
+//    crc_l       = 0;
+//    crc_l      |= ((unsigned char) temp[61]) << 8;
+//    crc_l      |= ((unsigned char) temp[62]);
+//    if(crc != crc_l)
+//    {
+//        // block invalid
+//        return -1;
+//    }
     else
     {
         //OS.prev_runlevel    = temp[0];
         //OS.runlevel         = temp[1];
         //OS.runmode          = temp[2];
         //OS.CPUClock         = temp[3];
-        OS.Temp             = temp[4];
-        OS.U12V             = temp[5];
-        OS.U3V3             = temp[6];
-        OS.U5V0             = temp[7];
-        OS.Rcount           += temp[8];
-        OS.RcountBOR        += temp[9];
-        OS.RcountPOR        += temp[10];
-        OS.RcountRI         += temp[11];
-        OS.RcountWDT        += temp[12];
-        OS.RcountSO         += temp[13];
-        OS.RcountSU         += temp[14];
+        OS.Temp             = Flash.Data[4];
+        OS.U12V             = Flash.Data[5];
+        OS.U3V3             = Flash.Data[6];
+        OS.U5V0             = Flash.Data[7];
+        OS.Rcount           += Flash.Data[8];
+        OS.RcountBOR        += Flash.Data[9];
+        OS.RcountPOR        += Flash.Data[10];
+        OS.RcountRI         += Flash.Data[11];
+        OS.RcountWDT        += Flash.Data[12];
+        OS.RcountSO         += Flash.Data[13];
+        OS.RcountSU         += Flash.Data[14];
 #ifdef MOD_rtc
-        rtc.days            = temp[15];
-        rtc.hour            = temp[16];
-        rtc.mins            = temp[17];
-        rtc.mont            = temp[18];
-        rtc.secs            = temp[19];
-        rtc.year            = temp[20];
+        rtc.days            = Flash.Data[15];
+        rtc.hour            = Flash.Data[16];
+        rtc.mins            = Flash.Data[17];
+        rtc.mont            = Flash.Data[18];
+        rtc.secs            = Flash.Data[19];
+        rtc.year            = Flash.Data[20];
 #endif
-        return 1;   // block loaded
+        return 0;   // block loaded
     }
 }// </editor-fold>
 
 // <editor-fold defaultstate="collapsed" desc="unsigned char SaveEEPROM_OS(unsigned char block)">
 unsigned char SaveEEPROM_OS(unsigned char block)   // Write System Data to EEPROM
 {
-    unsigned char temp[EE_Blocksize];
-    unsigned int crc;
-    memset(temp, 0, EE_Blocksize );
+//    unsigned char temp[EE_Blocksize];
+//    unsigned int crc;
+    memset(Flash.Data, 0, EE_Blocksize );
 
-    temp[0]     = OS.prev_runlevel;
-    temp[1]     = OS.runlevel;
-    temp[2]     = OS.runmode;
-    temp[3]     = 0;                // OS.CPUClock; is 4 bytes
-    temp[4]     = OS.Temp;
-    temp[5]     = OS.U12V;
-    temp[6]     = OS.U3V3;
-    temp[7]     = OS.U5V0;
-    temp[8]     = OS.Rcount;
-    temp[9]     = OS.RcountBOR;
-    temp[10]    = OS.RcountPOR;
-    temp[11]    = OS.RcountRI;
-    temp[12]    = OS.RcountWDT;
-    temp[13]    = OS.RcountSO;
-    temp[14]    = OS.RcountSU;
+    Flash.Data[0]     = OS.prev_runlevel;
+    Flash.Data[1]     = OS.runlevel;
+    Flash.Data[2]     = OS.runmode;
+    Flash.Data[3]     = 0;                // OS.CPUClock; is 4 bytes
+    Flash.Data[4]     = OS.Temp;
+    Flash.Data[5]     = OS.U12V;
+    Flash.Data[6]     = OS.U3V3;
+    Flash.Data[7]     = OS.U5V0;
+    Flash.Data[8]     = OS.Rcount;
+    Flash.Data[9]     = OS.RcountBOR;
+    Flash.Data[10]    = OS.RcountPOR;
+    Flash.Data[11]    = OS.RcountRI;
+    Flash.Data[12]    = OS.RcountWDT;
+    Flash.Data[13]    = OS.RcountSO;
+    Flash.Data[14]    = OS.RcountSU;
 #ifdef MOD_rtc
-    temp[15]    = rtc.days;
-    temp[16]    = rtc.hour;
-    temp[17]    = rtc.mins;
-    temp[18]    = rtc.mont;
-    temp[19]    = rtc.secs;
-    temp[20]    = rtc.year;
-#else
-    temp[15]    = 0;
-    temp[16]    = 0;
-    temp[17]    = 0;
-    temp[18]    = 0;
-    temp[19]    = 0;
-    temp[20]    = 0;
+    Flash.Data[15]    = rtc.days;
+    Flash.Data[16]    = rtc.hour;
+    Flash.Data[17]    = rtc.mins;
+    Flash.Data[18]    = rtc.mont;
+    Flash.Data[19]    = rtc.secs;
+    Flash.Data[20]    = rtc.year;
 #endif
-    crc         = crc16(&temp, EE_Blocksize-4);
-    temp[61]    = (unsigned char)( (crc >> 8) & 0xFF);
-    temp[62]    = (unsigned char)( crc & 0xFF);
-    temp[63]    = EE_sig_System;
+    Flash.Data[63]    = EE_sig_System;
 
-    EE_write_block(Flash.eprom.Block[block].adress, &temp[0], EE_Blocksize);    
+    EE_save_block(block);
+    
+    //EE_write_block(Flash.eprom.Block[block].adress, &temp[0], EE_Blocksize);    
 }// </editor-fold>
 #endif    /* MOD_FlashFS */
