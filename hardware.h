@@ -12,7 +12,7 @@
 extern "C" {
 #endif
 
-#define Fosc    64000000        // if using external resonator, we need this
+#define XTAL    64000        // if using external resonator, we need this
     
 /* Step 1:
  * Comment/UnComment modules as needed by application
@@ -29,7 +29,7 @@ extern "C" {
 //#define MOD_I2C                   // I2C Driver, not using MSSP module
 //#define MOD_FlashFS_extSPI        // TODO: Driver for external SPI Flash
 //#define MOD_FlashFS_extI2C        // Driver for I2C eeprom devices. unfinished
-//#define MOD_HardPWM               // TODO: PWM Output using the PIC hardware CCPWM module
+#define MOD_HardPWM               // TODO: PWM Output using the PIC hardware CCPWM module
 
     // Input Modules
 //#define MOD_Input_KB_PS2          // unfinished but somehow working
@@ -52,10 +52,12 @@ extern "C" {
 /*      These Modules do not need any further configuration, they are ready to use
  */
 #ifdef MOD_rtc
-    #define T1_preload_h    0b00010111
-    #define T1_preload_l    90
+    #define T1_preload_h    0b01000000 // 0b00001001 // 0b00001111 // 0b00001101 // 0b00001001 // 0b00001101 // 13  (0b00001011 // 11)
+    #define T1_preload_l    0b00000000 // 0b11000100 // 0b01110011 // 0b10101100 // 0b10000000 // 0b10100000 // 160 (0b10010110 // 150)
     // preloads calculation:
     // ( 65536 - (2 register write) ) - ( (16M Fcyc) / 256 Prescale )= 3034
+    // ( 65536 - 70(addEvent+2) ) - (16M/256) = 2966
+    // ^^^^ +18% = 3488 // -18% = 2432 // 3500
     // the 46k20 only has 1:8 prescaler for TMR1, so we need 1:32 software postscaler
     // TODO: check and recalculate these, they are taken from another project
     #include "./rtc.h"

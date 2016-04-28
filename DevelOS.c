@@ -148,11 +148,18 @@ void OS_InitGlobals(void)      // Initialize Global Variables
 void OS_InitChip(void)         // Configure the Hardware Modules
 {
     // Init Clock
-    OSCCONbits.IRCF=0b111;      // Internal Clock at Max (16 MHz)
-    OSCCONbits.SCS1=1;          // 
-    OSCTUNEbits.PLLEN=1;        // enable 4x PLL
-    OSCTUNEbits.INTSRC=1;       // Use internal resonator
     
+    if( intClock() )
+    {
+        // PIC configured for internal oscillator
+        // so we configure it for max frequency here
+        // TODO: this is processor specific, could write a function configureClock()
+        OSCCONbits.IRCF=0b111;      // Internal Clock at Max (16 MHz)
+        OSCCONbits.SCS1=1;          // 
+        OSCTUNEbits.PLLEN=1;        // enable 4x PLL
+        OSCTUNEbits.INTSRC=1;       // Use internal resonator
+    }
+
     // Disable slew rate 
     SLRCONbits.SLRD=0;
 
@@ -179,7 +186,7 @@ void OS_InitChip(void)         // Configure the Hardware Modules
     T0CONbits.T08BIT = 1;       // 8-bit Mode
     T0CONbits.T0CS = 0;         // Use Fosc
     T0CONbits.T0PS = 0b010;     // Prescaler 1:8
-    T0CONbits.PSA = 0;          // Use Prescaler
+    T0CONbits.PSA = 0;          // Use no Prescaler
     T0CONbits.TMR0ON=0;         // Stop Timer0
 
     // Timer1 as LF counter, dedicated to rtc
@@ -323,6 +330,9 @@ void InitOS(void)
     OS.F_Display=Display_Freq;                 // TODO: create an array to store system timings
     OS.F_ADC=ADC_Freq;                     // use floats for timings to enable refresh rates < 1 / second
     OS.F_PWM=PWM_Freq;
+    OS.RTC_preloadH=T1_preload_h;
+    OS.RTC_preloadL=T1_preload_l;
+
     setTiming();
 
     // clear timing counters
@@ -738,7 +748,14 @@ void setTiming(void)
     OS.Tinst = 1000 * f_temp;       // nanoseconds per instruction //(1000000 / OS.CPUClock) * 4; // in ns
     
     // TODO: derive these from OS.CPUClock to enable clock switching
-    temp = OS.CPUClock / 8000;
+    if(intClock())
+    {
+        temp = OS.CPUClock / 8000;
+    }
+    else
+    {
+        temp = OS.CPUClock / 2000;
+    }
     lf_count[LFT_rtc].wait = temp;      // postscale for rtc
     lf_count[LFT_display].wait = lf_count[LFT_rtc].wait / OS.F_Display;
     lf_count[LFT_adc].wait = lf_count[LFT_rtc].wait / OS.F_ADC;
@@ -751,40 +768,44 @@ unsigned long getCPUClock(void)
 {
     unsigned long temp=0;
 
-#if defined(__18F46K20)
-    // <editor-fold defaultstate="collapsed" desc="processor specific">
-    switch(OSCCONbits.IRCF)
+    if( intClock() )
     {
-        case 0:
-            temp = 31;
-            break;
-        case 1:
-            temp=250;
-            break;
-        case 2:
-            temp=500;
-            break;
-        case 3:
-            temp=1000;
-            break;
-        case 4:
-            temp=2000;
-            break;
-        case 5:
-            temp=4000;
-            break;
-        case 6:
-            temp=8000;
-            break;
-        case 7:
-            temp=16000;
-            break;
+        switch(OSCCONbits.IRCF)
+        {
+            case 0:
+                temp = 31;
+                break;
+            case 1:
+                temp=250;
+                break;
+            case 2:
+                temp=500;
+                break;
+            case 3:
+                temp=1000;
+                break;
+            case 4:
+                temp=2000;
+                break;
+            case 5:
+                temp=4000;
+                break;
+            case 6:
+                temp=8000;
+                break;
+            case 7:
+                temp=16000;
+                break;
+        }
+        if(OSCTUNEbits.PLLEN==1)
+        {
+            temp=temp*4;
+        }
     }
-    if(OSCTUNEbits.PLLEN==1)
+    else
     {
-        temp=temp*4;
-    }// </editor-fold>
-#endif
+        temp = XTAL;
+    }
 
     return temp;
 }// </editor-fold>
@@ -849,7 +870,7 @@ void OS_SetRunlevel(unsigned char runlevel)
             c_clr();    // maybe the contents could be saved somewhere as boot log
             
             // Now start the Timers
-            //T0CONbits.TMR0ON=1;       // Start Timer0
+            T0CONbits.TMR0ON=1;       // Start Timer0
             T1CONbits.TMR1ON=1;         // Start Timer1
             #ifdef MOD_HardPWM
             T2CONbits.TMR2ON=1;         // start Timer 2
@@ -873,7 +894,7 @@ void OS_SetRunlevel(unsigned char runlevel)
     switch(OS.runlevel)             // Do Entry stuff (init, SFR's, ...)
     {
         case RL_Standby:
-            LCD.Light=0;
+            //LCD.Light=0;
             break;
         default:
             //d_clr();
@@ -955,6 +976,24 @@ void float2string(char * output, float value)
             strcat (output, ".");
     }
 }// </editor-fold>
+
+unsigned char intClock(void)
+{
+    unsigned char temp;
+    
+    // Init Clock
+    memcpypgm2ram(&temp, 0x300001, 1);
+    temp = temp & 0x0F; // we need the last 4 bits of CONFIG1H
+    
+    if((temp == 0x08) || (temp == 0x09) )
+    {
+        return 1;
+    }
+    else 
+    {
+        return 0;
+    }
+}
 
 // <editor-fold defaultstate="collapsed" desc="#pragma romdata system_strings">
 

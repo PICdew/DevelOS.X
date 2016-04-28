@@ -28,14 +28,14 @@ extern "C" {
 #define COUNT 9
 #define REFval 10
 
-#define BOOT_SLOW                           // This will add some delays to the startup process
+//#define BOOT_SLOW                           // This will add some delays to the startup process
 #define Slowboot            1000            // how slow shall i boot?
 #define Startmode           RL_Standby      // OS shall switch to this after booting
 #define Display_Freq        2               
 #define ADC_Freq            1
 #define PWM_Freq            1
 #define ResetToken          0xAA            // this is for resetting the os in debug
-#define EventBuffer         32              // Length of the internal Event Queue
+#define EventBuffer         8              // Length of the internal Event Queue
 #define LF_Count            3               // Number of LF-Counters 
                                             // These are like programmable software-timers, running at 32 Hz
 #define ISR_HF_Count        5               // Number of HF-Counters for the ISR-Routine. 
@@ -76,6 +76,8 @@ extern struct OS_State {
         // System Timings
     unsigned long               CPUClock;      // CPU Clock in kHz
     unsigned long               Tinst;        // instruction time in nanoseconds
+    volatile unsigned char      RTC_preloadH;
+    volatile unsigned char      RTC_preloadL;    
     unsigned char               F_Display;
     unsigned char               F_ADC;
     unsigned char               F_PWM;
@@ -158,6 +160,7 @@ void OS_delay_1S(void);
     // Timing Control
 unsigned long getCPUClock(void);
 void setTiming(void);
+unsigned char intClock(void);
 
     // Other Functions
 unsigned long detectModules(void);

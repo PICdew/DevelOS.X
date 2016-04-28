@@ -106,7 +106,7 @@ void high_vector (void)
     _asm GOTO High_ISR _endasm
 }
 #pragma code
-#pragma interrupt High_ISR nosave=section("ISR_Count"), section("UART")
+#pragma interrupt High_ISR nosave=section("ISR_Count"), section("UART"), section("OS_Data")
 void High_ISR(void)         
 {
     char i;
@@ -114,7 +114,8 @@ void High_ISR(void)
     if(INTCONbits.TMR0IF)       // <editor-fold defaultstate="collapsed" desc="Timer 0 (HF Timer)">
     {
         INTCONbits.TMR0IF = 0;      //irq clear
-//        for(i=0; i<OS.HFCounters; i++)
+        //PORTCbits.RC6 = !PORTCbits.RC6;
+//                for(i=0; i<OS.HFCounters; i++)
 //        {
 //            if(isr_hf_count[i].Count++ == isr_hf_count[i].Wait)
 //            {
@@ -122,20 +123,15 @@ void High_ISR(void)
 //                isr_hf_count[i].Count=0;
 //            }
 //        }
-        INTCONbits.TMR0IE = 1;      //irq enable
     } // </editor-fold>
 
     else if(PIR1bits.TMR1IF)    // <editor-fold defaultstate="collapsed" desc="Timer 1 (LF Timer)">
     {
-        PIR1bits.TMR1IF=0;          // clear interrupt flag
-        T1CONbits.TMR1ON=0;         // Stop Timer1
-        // send Event to OS
         addEvent(EV_LF_Timer, EV_LFT_count);
         // preload the timer
-        TMR1H = T1_preload_h;
-        TMR1L = T1_preload_l;
-        T1CONbits.TMR1ON=1;         // Start Timer1
-        PIE1bits.TMR1IE = 1;        // enable interrupt
+        TMR1H=OS.RTC_preloadH;
+        TMR1L=OS.RTC_preloadL;
+        PIR1bits.TMR1IF=0;          // clear interrupt flag
     } // </editor-fold>
     
     else if(INTCONbits.INT0IF)  // <editor-fold defaultstate="collapsed" desc="Ext INT 0">
@@ -170,40 +166,38 @@ void High_ISR(void)
             Keyboard.BitCounter=0;
         }
 #endif
-        INTCONbits.INT0IE=1;
     } // </editor-fold>
     
     else if(PIR1bits.RCIF)      // <editor-fold defaultstate="collapsed" desc="UART rx">
     {
-                PIR1bits.RCIF=0;
+        
 
         #ifdef MOD_UART
 
         if(RCSTAbits.FERR)
         {
             addEvent(EV_uart_error, EV_E_uart_frame);
-            //tmp=RCREG;
+            tmp=RCREG;
         }else if(RCSTAbits.OERR)
         {
             addEvent(EV_uart_error, EV_E_uart_of);
-            //tmp=RCREG;
+            tmp=RCREG;
         }else{
-            //tmp=RCREG;
-            addEvent(EV_uart_rx, RCREG);
+            tmp=RCREG;
+            addEvent(EV_uart_rx, tmp);
             #ifdef UART_echo
-            //TXREG=tmp;
-            //TXSTAbits.TXEN=1;
+            TXREG=tmp;
+            TXSTAbits.TXEN=1;
             #endif /* UART_echo */
         }
+        #else
+        PIR1bits.RCIF=0;
         #endif /* MOD_UART */        
-
-        //PIE1bits.RCIE=1;
     } // </editor-fold>
     
     else if(PIR1bits.TXIF)      // <editor-fold defaultstate="collapsed" desc="UART tx">
     {
-        PIR1bits.TXIF=0;
-#ifdef MOD_UART
+        #ifdef MOD_UART
         if(uart.tx_bytes>0)
         {
            uart.tx_bytes--;
@@ -212,17 +206,14 @@ void High_ISR(void)
         else if(TXSTAbits.TRMT)
         {
                 TXSTAbits.TXEN=0;
-                //PIE1bits.TXIE=0;
+                PIE1bits.TXIE=0;
                 addEvent(EV_uart_tx, 0);
+                PIR1bits.TXIF=0;
         }
-//        else if(TXSTAbits.TRMT)
-//        {
-//            TXSTAbits.TXEN=0;
-//        }
-#endif /* MOD_UART */        
+        #else
+        PIR1bits.TXIF=0;
+        #endif /* MOD_UART */        
     } // </editor-fold>
-    
-    //INTCONbits.GIEH =1;
 }
 // </editor-fold>
 
@@ -237,7 +228,6 @@ void low_vector (void)
 void Low_ISR(void)     
 {
     unsigned int temp;
-    unsigned char tmp;
     
     if(PIR1bits.ADIF)       // <editor-fold defaultstate="collapsed" desc="ADC Module">
     {
@@ -256,10 +246,7 @@ void Low_ISR(void)
         TRISCbits.TRISC1 = 0;
         TRISCbits.TRISC2 = 0;
         #endif
-        PIE1bits.TMR2IE = 1;
-
     }
-    //INTCONbits.GIEL =1;
 }
 // </editor-fold>
 
