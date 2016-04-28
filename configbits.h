@@ -24,7 +24,7 @@ extern "C" {
 
 #if defined(__18F46K20)
 // <editor-fold defaultstate="collapsed" desc="PIC18F 46K20 Config Bits (#pragmas)">
-#pragma config FOSC     = INTIO67
+#pragma config FOSC     = HSPLL
 #pragma config HFOFST   = OFF
 #pragma config FCMEN    = OFF
 #pragma config PWRT     = OFF
@@ -34,8 +34,6 @@ extern "C" {
 #pragma config PBADEN   = OFF
 #pragma config STVREN   = OFF
 #pragma config XINST    = ON
-
-#define	EE_1k
 // </editor-fold>
 #elif defined(__18F4550)
 // <editor-fold defaultstate="collapsed" desc="PIC18F 4550 Config Bits (#pragmas)">

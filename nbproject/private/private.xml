@@ -4,10 +4,13 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
+            <file>file:/C:/Users/Steffi/MPLABXProjects/DevelOS.X/runlevel.c</file>
+            <file>file:/C:/Users/Steffi/MPLABXProjects/DevelOS.X/rtc.c</file>
+            <file>file:/C:/Users/Steffi/MPLABXProjects/DevelOS.X/configbits.h</file>
             <file>file:/C:/Users/Steffi/MPLABXProjects/DevelOS.X/DevelOS.h</file>
             <file>file:/C:/Users/Steffi/MPLABXProjects/DevelOS.X/DevelOS.c</file>
-            <file>file:/C:/Users/Steffi/MPLABXProjects/DevelOS.X/modules.c</file>
             <file>file:/C:/Users/Steffi/MPLABXProjects/DevelOS.X/newmain.c</file>
+            <file>file:/C:/Users/Steffi/MPLABXProjects/DevelOS.X/hardware.h</file>
         </group>
     </open-files>
 </project-private>
