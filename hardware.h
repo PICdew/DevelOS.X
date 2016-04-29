@@ -23,7 +23,7 @@ extern "C" {
 #define MOD_ADC                     // ad converters. needed to track physical environment
 #define MOD_FlashFS                 // needed for access to internal eeprom
 #define MOD_Console                 // TODO: abstraction layer for UART,Display and Input Modules
-//#define MOD_UART                    // TODO: serial console
+#define MOD_UART                    // TODO: serial console
     
     // Additional Modules
 //#define MOD_I2C                   // I2C Driver, not using MSSP module
@@ -92,10 +92,10 @@ extern "C" {
 // <editor-fold defaultstate="collapsed" desc="MOD_UART">
 #ifdef MOD_UART
     #define RX_BUFF_SIZE    32              // also determines max command line
-    #define TX_BUFF_SIZE    32              // save memory
+    #define TX_BUFF_SIZE    64              // save memory
     #include "./uart.h"
-    #define BAUD_H          BAUD_H__300
-    #define BAUD_L          BAUD_L__300
+    #define BAUD_H          BAUD_H_115k
+    #define BAUD_L          BAUD_L_115k
     #define TX_t            TRISCbits.TRISC6
     #define RX_t            TRISCbits.TRISC7
     #define UART_echo

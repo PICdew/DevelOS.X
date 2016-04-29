@@ -28,8 +28,8 @@ extern "C" {
 #define COUNT 9
 #define REFval 10
 
-//#define BOOT_SLOW                           // This will add some delays to the startup process
-#define Slowboot            1000            // how slow shall i boot?
+#define BOOT_SLOW                           // This will add some delays to the startup process
+#define Slowboot            5000            // how slow shall i boot?
 #define Startmode           RL_Standby      // OS shall switch to this after booting
 #define Display_Freq        2               
 #define ADC_Freq            1

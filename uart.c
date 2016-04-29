@@ -73,10 +73,14 @@ char sendString(const char string[], char len)
         {
             uart.tx_buff[i]=string[i];
         }
+//        uart.tx_buff[i]=0x0D;
+//        uart.tx_buff[i+1]=0x0A;
+//        len += 2;
         uart.busy = 1;
         uart.tx_bytes = len;
+        uart.tx_byte=0;
         //PIE1bits.TXIE=1;
-        //TXSTAbits.TXEN=1;
+        TXSTAbits.TXEN=1;
         return 0;
     }
     
@@ -91,5 +95,81 @@ void clearBuffTX(void)
     uart.tx_bytes=0;
 }
 
+char uart_txByte(void)                         // called from irq-handler. read byte from tx buffer
+{
+    char i;
+    char tmp=0;
+    
+    if(uart.tx_bytes>0)
+    {
+        tmp=uart.tx_buff[0];
+        // it would be nicer to have the following done outside interrupt scope,
+        // yet i'm not sure if this could lead to missed and or double-send bytes
+        for(i=0;i<TX_BUFF_SIZE-1;i++)
+        {
+            uart.tx_buff[i]=uart.tx_buff[i+1];
+        }
+        uart.tx_bytes--;
+    }
+    return tmp;
+}
+
+char xmit(const char * string)          // send string to uart
+{
+    signed char i,res;
+    char bytes=strlen(string);
+
+    if(strlen(string)>TX_BUFF_SIZE)
+    {
+        res= -1;                      // string too long, hopeless to retry
+    }
+    else if(TXSTAbits.TXEN==1)
+    {
+        res= 2;                       // uart already running, retry later
+    }
+    else if(uart.tx_bytes+strlen(string)>TX_BUFF_SIZE)
+    {
+        res = 1;                       // insufficient buffer space, retry later
+    }
+    else
+    {
+        for(i=0; i < bytes;i++)    // copy string into uart buffer, and start sending
+        {
+            uart.tx_buff[uart.tx_bytes++] = *string++;
+        }
+        TXSTAbits.TXEN=1;
+        res= 0;
+    }
+    return res;
+}
+
+char uart_xmit(const char * string, unsigned char len)          // send string to uart
+{
+    signed char i,res;
+    unsigned char bytes=len;
+
+    if(bytes>TX_BUFF_SIZE)
+    {
+        res= -1;                      // string too long, hopeless to retry
+    }
+    else if(TXSTAbits.TXEN==1)
+    {
+        res= 2;                       // uart already running, retry later
+    }
+    else if(uart.tx_bytes+bytes>TX_BUFF_SIZE)
+    {
+        res = 1;                       // insufficient buffer space, retry later
+    }
+    else
+    {
+        for(i=0; i < bytes;i++)    // copy string into uart buffer, and start sending
+        {
+            uart.tx_buff[uart.tx_bytes++] = *string++;
+        }
+        TXSTAbits.TXEN=1;
+        res= 0;
+    }
+    return res;
+}
 #endif 
 
