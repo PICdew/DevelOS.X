@@ -186,7 +186,7 @@ void OS_InitChip(void)         // Configure the Hardware Modules
     T0CONbits.T08BIT = 1;       // 8-bit Mode
     T0CONbits.T0CS = 0;         // Use Fosc
     T0CONbits.T0PS = 0b010;     // Prescaler 1:8
-    T0CONbits.PSA = 0;          // Use no Prescaler
+    T0CONbits.PSA = 0;          // Use Prescaler
     T0CONbits.TMR0ON=0;         // Stop Timer0
 
     // Timer1 as LF counter, dedicated to rtc
@@ -251,8 +251,7 @@ void OS_InitChip(void)         // Configure the Hardware Modules
     TXSTAbits.SYNC=0;           // set usart to async mode
     RCSTAbits.CREN=1;           // enable reciever circuit
     RCSTAbits.SPEN=1;           // enable the module
-    //TXSTAbits.TXEN=1;           // enable the transmitter. this will set the interrupt flag
-    //TXREG='M';
+    TXSTAbits.TXEN=1;           // enable the transmitter. this will set the interrupt flag
     #endif /* MOD_UART */
     
     // configure irq priority
@@ -296,9 +295,9 @@ void OS_InitChip(void)         // Configure the Hardware Modules
     PIE1bits.SSPIE = 1;         // enable I2C interrupt
     #endif /* MOD_FlashFS_extI2C */
     
-//    // finally, enable global irqs
-//    INTCONbits.GIEH = 1;
-//    INTCONbits.GIEL = 1;
+    // finally, enable global irqs
+    INTCONbits.GIEH = 1;
+    INTCONbits.GIEL = 1;
     
 }// </editor-fold>
 
@@ -645,8 +644,10 @@ void OS_Event(void)
             #ifdef MOD_UART
             // no more bytes to send
             // clear buffer
-            uart.busy = 0;
+            //while(!TXSTAbits.TRMT); //wait for the last byte to finish
+            //TXSTAbits.TXEN=0;
             clearBuffTX();
+            uart.busy = 0;
             delEvent();
             #else   /* MOD_UART */
             addEvent(EV_Error, EV_E_EVinv);
@@ -870,15 +871,11 @@ void OS_SetRunlevel(unsigned char runlevel)
             c_clr();    // maybe the contents could be saved somewhere as boot log
             
             // Now start the Timers
-            T0CONbits.TMR0ON=1;       // Start Timer0
+            //T0CONbits.TMR0ON=1;       // Start Timer0
             T1CONbits.TMR1ON=1;         // Start Timer1
             #ifdef MOD_HardPWM
             T2CONbits.TMR2ON=1;         // start Timer 2
             #endif
-
-            // finally, enable global irqs
-            INTCONbits.GIEH = 1;
-            INTCONbits.GIEL = 1;
             // </editor-fold>
             break;
         default:

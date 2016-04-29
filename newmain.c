@@ -111,7 +111,7 @@ void High_ISR(void)
 {
     char i;
 
-    if(INTCONbits.TMR0IF)       // <editor-fold defaultstate="collapsed" desc="Timer 0 (HF Timer)">
+    if(INTCONbits.TMR0IF)   // <editor-fold defaultstate="collapsed" desc="Timer 0 (HF Timer)">
     {
         INTCONbits.TMR0IF = 0;      //irq clear
         //PORTCbits.RC6 = !PORTCbits.RC6;
@@ -125,7 +125,7 @@ void High_ISR(void)
 //        }
     } // </editor-fold>
 
-    else if(PIR1bits.TMR1IF)    // <editor-fold defaultstate="collapsed" desc="Timer 1 (LF Timer)">
+    if(PIR1bits.TMR1IF)     // <editor-fold defaultstate="collapsed" desc="Timer 1 (LF Timer)">
     {
         addEvent(EV_LF_Timer, EV_LFT_count);
         // preload the timer
@@ -134,7 +134,7 @@ void High_ISR(void)
         PIR1bits.TMR1IF=0;          // clear interrupt flag
     } // </editor-fold>
     
-    else if(INTCONbits.INT0IF)  // <editor-fold defaultstate="collapsed" desc="Ext INT 0">
+    if(INTCONbits.INT0IF)   // <editor-fold defaultstate="collapsed" desc="Ext INT 0">
     {
         INTCONbits.INT0IF=0;
         // Bit einlesen & zählen
@@ -166,54 +166,7 @@ void High_ISR(void)
             Keyboard.BitCounter=0;
         }
 #endif
-    } // </editor-fold>
-    
-    else if(PIR1bits.RCIF)      // <editor-fold defaultstate="collapsed" desc="UART rx">
-    {
-        
-
-        #ifdef MOD_UART
-
-        if(RCSTAbits.FERR)
-        {
-            addEvent(EV_uart_error, EV_E_uart_frame);
-            tmp=RCREG;
-        }else if(RCSTAbits.OERR)
-        {
-            addEvent(EV_uart_error, EV_E_uart_of);
-            tmp=RCREG;
-        }else{
-            tmp=RCREG;
-            addEvent(EV_uart_rx, tmp);
-            #ifdef UART_echo
-            TXREG=tmp;
-            TXSTAbits.TXEN=1;
-            #endif /* UART_echo */
-        }
-        #else
-        PIR1bits.RCIF=0;
-        #endif /* MOD_UART */        
-    } // </editor-fold>
-    
-    else if(PIR1bits.TXIF)      // <editor-fold defaultstate="collapsed" desc="UART tx">
-    {
-        #ifdef MOD_UART
-        if(uart.tx_bytes>0)
-        {
-           uart.tx_bytes--;
-           TXREG=uart.tx_buff[uart.tx_bytes];
-        }
-        else if(TXSTAbits.TRMT)
-        {
-                TXSTAbits.TXEN=0;
-                PIE1bits.TXIE=0;
-                addEvent(EV_uart_tx, 0);
-                PIR1bits.TXIF=0;
-        }
-        #else
-        PIR1bits.TXIF=0;
-        #endif /* MOD_UART */        
-    } // </editor-fold>
+    } // </editor-fold>  
 }
 // </editor-fold>
 
@@ -228,6 +181,7 @@ void low_vector (void)
 void Low_ISR(void)     
 {
     unsigned int temp;
+    unsigned char tmp;
     
     if(PIR1bits.ADIF)       // <editor-fold defaultstate="collapsed" desc="ADC Module">
     {
@@ -239,14 +193,56 @@ void Low_ISR(void)
         PIE1bits.ADIE=1;                        //  Enable IRQ
     } // </editor-fold>
     
-    else if(PIR1bits.TMR2IF)
+    if(PIR1bits.TMR2IF)     // <editor-fold defaultstate="collapsed" desc="Timer 2 (PWM)">
     {
         PIR1bits.TMR2IF =0;
         #ifdef MOD_HardPWM
-        TRISCbits.TRISC1 = 0;
-        TRISCbits.TRISC2 = 0;
+        PWM0_t = 0;
+        PWM1_t = 0;
         #endif
-    }
+        PIE1bits.TMR2IE=0;
+    }// </editor-fold>
+    
+    if(PIR1bits.RCIF)       // <editor-fold defaultstate="collapsed" desc="UART rx">
+    {
+        #ifdef MOD_UART
+        tmp=RCREG;
+        if(RCSTAbits.FERR)
+        {
+            addEvent(EV_uart_error, EV_E_uart_frame);
+            
+        }else if(RCSTAbits.OERR)
+        {
+            addEvent(EV_uart_error, EV_E_uart_of);
+        }else{
+            addEvent(EV_uart_rx, tmp);
+            #ifdef UART_echo
+            TXREG=tmp;
+            TXSTAbits.TXEN=1;
+            #endif /* UART_echo */
+        }
+        #else
+        PIR1bits.RCIF=0;
+        #endif /* MOD_UART */        
+    } // </editor-fold>
+    
+    if(PIR1bits.TXIF)       // <editor-fold defaultstate="collapsed" desc="UART tx">
+    {
+        #ifdef MOD_UART
+        tmp=uart_txByte();
+        if(tmp>0)
+        {
+           TXREG=tmp;
+        }   
+        else if (TXSTAbits.TRMT)
+        {
+            TXSTAbits.TXEN=0;
+            addEvent(EV_uart_tx, 0);
+        }
+        #else
+        PIE1bits.TXIE=0;        // if the module is not active, the interrupt should not be enabled
+        #endif /* MOD_UART */        
+    } // </editor-fold>
 }
 // </editor-fold>
 

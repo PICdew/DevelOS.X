@@ -3,8 +3,11 @@
 // <editor-fold defaultstate="collapsed" desc="void c_cr(void)">
 void c_cr(void)
 {
-    char i;
-
+    signed char i;
+#ifdef MOD_UART
+    char* ret[] = {0x0d,0x0a};
+    while(uart_xmit(console.Buffer[console.cursor_y], CON_width));
+    while(uart_xmit(ret, 2));
     // set cursor home
     console.cursor_x=0;
     
@@ -61,7 +64,10 @@ void c_print(const char* string[])      // this one only works for rom strings!
         
     strcpypgm2ram( &buff, string ); //
     byte=buff[0];
-    
+//    #ifdef MOD_UART
+//    while(xmit(buff));
+//    #endif
+
     while(byte != 0)
     {
         // wrap at end of line
@@ -113,9 +119,13 @@ char sysprint(unsigned char pre, unsigned char str, unsigned char app)      // t
     }
     byte=0;
         
-    strcpypgm2ram( buff+pre, sys_string[str] ); //
+    strcpypgm2ram( buff+pre, sys_string[str] );
     
     byte=buff[0];
+//    #ifdef MOD_UART
+//    while(xmit(buff));
+//    #endif
+
     while(byte != 0)
     {
         // wrap at end of line

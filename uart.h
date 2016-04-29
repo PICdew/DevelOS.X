@@ -19,15 +19,19 @@ extern "C" {
 #pragma udata UART                          // uart data
 extern volatile struct UART_DATA {
     unsigned char rx_buff[RX_BUFF_SIZE];    // uart recieve buffer, =max cmd length
-    volatile unsigned char tx_buff[TX_BUFF_SIZE];    // uart transmit buffer
     unsigned char rx_bytes;                 // rx counter
+    volatile unsigned char tx_buff[TX_BUFF_SIZE];    // uart transmit buffer    
     volatile unsigned char tx_bytes;                 // tx counter
+    volatile unsigned char tx_byte;
     unsigned char baud;                     // baudrate
-    unsigned char busy;
+    volatile unsigned char busy;
     } uart;
 #pragma udata
 
 char setBaud(char cmd);
+char xmit(const char * string);
+char uart_xmit(const char * string, unsigned char len);
+char uart_txByte(void);
 char sendString(const char string[],char len);
 void clearBuffTX(void);
 
